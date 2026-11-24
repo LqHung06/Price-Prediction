@@ -1,0 +1,166 @@
+{
+  "baseline_reproduction": {
+    "ridge_R2_log": 0.7936,
+    "ridge_expected": 0.7936,
+    "ridge_within_tol": true,
+    "rf_R2_log": 0.8685,
+    "rf_expected": 0.8685,
+    "rf_within_tol": true
+  },
+  "cv": {
+    "ridge": {
+      "base": {
+        "mean": 0.7811,
+        "std": 0.0126,
+        "folds": [
+          0.7739,
+          0.7757,
+          0.7834,
+          0.8042,
+          0.7681
+        ],
+        "seconds": 2.9
+      },
+      "knn": {
+        "mean": 0.7914,
+        "std": 0.0121,
+        "folds": [
+          0.7826,
+          0.7902,
+          0.7955,
+          0.8121,
+          0.7768
+        ],
+        "seconds": 23.1
+      },
+      "target_enc": {
+        "mean": 0.7766,
+        "std": 0.0121,
+        "folds": [
+          0.767,
+          0.7735,
+          0.7808,
+          0.7979,
+          0.7639
+        ],
+        "seconds": 2.7
+      },
+      "interactions": {
+        "mean": 0.7959,
+        "std": 0.0118,
+        "folds": [
+          0.7908,
+          0.7916,
+          0.7976,
+          0.8173,
+          0.7822
+        ],
+        "seconds": 3.6
+      },
+      "suburb10": {
+        "mean": 0.7927,
+        "std": 0.0129,
+        "folds": [
+          0.7845,
+          0.7865,
+          0.7955,
+          0.8165,
+          0.7805
+        ],
+        "seconds": 3.5
+      },
+      "no_flags": {
+        "mean": 0.7805,
+        "std": 0.0128,
+        "folds": [
+          0.7734,
+          0.7752,
+          0.7831,
+          0.804,
+          0.7668
+        ],
+        "seconds": 2.7
+      },
+      "te_inter": {
+        "mean": 0.7895,
+        "std": 0.0125,
+        "folds": [
+          0.7807,
+          0.7873,
+          0.7924,
+          0.8117,
+          0.7753
+        ],
+        "seconds": 3.0
+      }
+    },
+    "rf_150trees": {
+      "base": {
+        "mean": 0.8594,
+        "std": 0.0101,
+        "folds": [
+          0.8511,
+          0.8583,
+          0.8658,
+          0.8748,
+          0.8469
+        ],
+        "seconds": 153.6
+      },
+      "target_enc": {
+        "mean": 0.8603,
+        "std": 0.0101,
+        "folds": [
+          0.8515,
+          0.8597,
+          0.8704,
+          0.8729,
+          0.8472
+        ],
+        "seconds": 153.9
+      },
+      "suburb10": {
+        "mean": 0.8593,
+        "std": 0.01,
+        "folds": [
+          0.8513,
+          0.8577,
+          0.8663,
+          0.8743,
+          0.8467
+        ],
+        "seconds": 153.1
+      }
+    }
+  },
+  "test_winner": {
+    "ridge": {
+      "R2_log": 0.8042,
+      "R2_raw": 0.7797,
+      "MAE_log": 0.1769,
+      "MAE_raw": 191499.5,
+      "RMSE_raw": 295788.3,
+      "MedAPE_pct": 14.22,
+      "variant": "interactions",
+      "alpha": 1.0,
+      "R2_train_log": 0.8092,
+      "CV_R2_mean": 0.7959,
+      "CV_R2_std": 0.0118,
+      "train_sec": 1.3
+    },
+    "rf": {
+      "R2_log": 0.8674,
+      "R2_raw": 0.8213,
+      "MAE_log": 0.1402,
+      "MAE_raw": 160159.8,
+      "RMSE_raw": 266408.7,
+      "MedAPE_pct": 10.8,
+      "variant": "target_enc",
+      "R2_train_log": 0.9598,
+      "CV_R2_mean": 0.8603,
+      "CV_R2_std": 0.0101,
+      "note": "CV used 150 trees; final test fit uses 300 trees as in original run",
+      "train_sec": 89.2
+    }
+  }
+}

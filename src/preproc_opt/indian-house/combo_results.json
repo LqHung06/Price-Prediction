@@ -1,0 +1,226 @@
+{
+  "reproduction": {
+    "ridge_R2_log": 0.9427,
+    "ridge_expected": 0.9427,
+    "ridge_within_tol": true,
+    "rf_R2_log": 0.89,
+    "rf_expected": 0.89,
+    "rf_within_tol": true
+  },
+  "cv": {
+    "ridge": {
+      "base": {
+        "mean": 0.9084,
+        "std": 0.0118,
+        "folds": [
+          0.8901,
+          0.9077,
+          0.9182,
+          0.9026,
+          0.9234
+        ],
+        "seconds": 0.4
+      },
+      "inter": {
+        "mean": 0.9087,
+        "std": 0.0114,
+        "folds": [
+          0.8907,
+          0.9073,
+          0.9171,
+          0.9041,
+          0.924
+        ],
+        "seconds": 0.4
+      },
+      "knn": {
+        "mean": 0.8988,
+        "std": 0.0167,
+        "folds": [
+          0.874,
+          0.8927,
+          0.9139,
+          0.8927,
+          0.9207
+        ],
+        "seconds": 0.5
+      },
+      "quad": {
+        "mean": 0.9123,
+        "std": 0.0124,
+        "folds": [
+          0.8931,
+          0.9122,
+          0.9233,
+          0.9053,
+          0.9275
+        ],
+        "seconds": 0.4
+      },
+      "pair1_inter_knn": {
+        "mean": 0.8988,
+        "std": 0.0164,
+        "folds": [
+          0.8744,
+          0.8918,
+          0.9122,
+          0.8942,
+          0.9213
+        ],
+        "seconds": 0.5
+      },
+      "pair2_inter_quad": {
+        "mean": 0.9124,
+        "std": 0.0119,
+        "folds": [
+          0.8941,
+          0.9114,
+          0.922,
+          0.9065,
+          0.928
+        ],
+        "seconds": 0.4
+      },
+      "triple": {
+        "mean": 0.9015,
+        "std": 0.0171,
+        "folds": [
+          0.8768,
+          0.894,
+          0.9162,
+          0.8957,
+          0.9249
+        ],
+        "seconds": 0.5
+      }
+    },
+    "rf": {
+      "base": {
+        "mean": 0.808,
+        "std": 0.0441,
+        "folds": [
+          0.7973,
+          0.7304,
+          0.8354,
+          0.8161,
+          0.8607
+        ],
+        "seconds": 7.0
+      },
+      "inter": {
+        "mean": 0.8131,
+        "std": 0.0388,
+        "folds": [
+          0.7916,
+          0.7504,
+          0.848,
+          0.819,
+          0.8565
+        ],
+        "seconds": 8.0
+      },
+      "knn": {
+        "mean": 0.7927,
+        "std": 0.0479,
+        "folds": [
+          0.7771,
+          0.7086,
+          0.819,
+          0.8091,
+          0.8494
+        ],
+        "seconds": 8.7
+      },
+      "quad": {
+        "mean": 0.8078,
+        "std": 0.0446,
+        "folds": [
+          0.7982,
+          0.7286,
+          0.8362,
+          0.8159,
+          0.86
+        ],
+        "seconds": 21.6
+      },
+      "pair1_inter_knn": {
+        "mean": 0.7999,
+        "std": 0.0421,
+        "folds": [
+          0.7709,
+          0.7338,
+          0.8338,
+          0.8131,
+          0.8481
+        ],
+        "seconds": 31.6
+      },
+      "pair2_inter_quad": {
+        "mean": 0.812,
+        "std": 0.0407,
+        "folds": [
+          0.7912,
+          0.7451,
+          0.8486,
+          0.8185,
+          0.8564
+        ],
+        "seconds": 32.0
+      },
+      "triple": {
+        "mean": 0.7995,
+        "std": 0.0424,
+        "folds": [
+          0.7707,
+          0.7325,
+          0.8334,
+          0.8128,
+          0.848
+        ],
+        "seconds": 35.4
+      }
+    }
+  },
+  "cv_reference_original": {
+    "ridge": 0.9176,
+    "rf": 0.8474,
+    "note": "original CV used full data + train winsorise limits; this round's base CV is stricter (fold-internal, train only) -- not directly comparable"
+  },
+  "test_winner": {
+    "ridge": {
+      "R2_log": 0.9444,
+      "R2_raw": 0.9179,
+      "MAE_log": 0.0403,
+      "MAE_raw": 25379.2,
+      "RMSE_raw": 41663.5,
+      "MedAPE_pct": 3.16,
+      "variant": "pair2_inter_quad",
+      "alpha": 0.1,
+      "R2_train_log": 0.9196,
+      "CV_R2_mean": 0.9124,
+      "CV_R2_std": 0.0119,
+      "train_sec": 1.2
+    },
+    "rf": {
+      "R2_log": 0.8873,
+      "R2_raw": 0.8957,
+      "MAE_log": 0.062,
+      "MAE_raw": 36742.2,
+      "RMSE_raw": 46946.7,
+      "MedAPE_pct": 5.27,
+      "variant": "inter",
+      "R2_train_log": 0.9619,
+      "CV_R2_mean": 0.8131,
+      "CV_R2_std": 0.0388,
+      "train_sec": 7.1
+    }
+  },
+  "notes": {
+    "third_intervention": "log_Area^2 (quadratic in log area); target encoding for Location REJECTED (8 cities, OneHot already exact; Melbourne showed target enc hurts Ridge); suburb>=10-style grouping is a no-op here (all cities >100 rows)",
+    "interactions": [
+      "log_Area x Rooms",
+      "log_Area x Age"
+    ],
+    "area_per_room": "recomputed from imputed Area/Rooms in all experiment variants (original median-filled it independently)"
+  }
+}

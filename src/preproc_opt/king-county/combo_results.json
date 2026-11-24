@@ -1,0 +1,214 @@
+{
+  "design_notes": {
+    "knn_impute": "NO-OP on this dataset (0 missing cells) -- NOT counted as an intervention",
+    "component_a_interactions": [
+      "lat*long",
+      "log_sqft_living*grade",
+      "waterfront*view"
+    ],
+    "component_b_zip_grouping": "zipcodes with <100 train rows -> 'Other' (8 zips, 593 train rows, 3.4%); Melbourne <30 threshold would group 0 zips here (smallest zip has 39 train rows)",
+    "component_c_quadratic": "log_sqft_living^2 (diminishing returns to living area)",
+    "variants": {
+      "base": "original pipeline",
+      "interactions_single": "a only",
+      "pair1_inter_zipgroup": "a + b",
+      "pair2_inter_quad": "a + c",
+      "triple": "a + b + c"
+    },
+    "rf_cv_trees": 150,
+    "rf_test_trees": 300,
+    "baseline_expected": {
+      "ridge_R2_log": 0.8793,
+      "rf_R2_log": 0.8867
+    },
+    "zip_grouping_stats": {
+      "threshold": 100,
+      "n_grouped_zips": 8,
+      "n_grouped_rows_train": 593
+    }
+  },
+  "reproduction": {
+    "ridge_R2_log": 0.8793,
+    "ridge_expected": 0.8793,
+    "ridge_within_tol": true,
+    "rf_R2_log": 0.8867,
+    "rf_expected": 0.8867,
+    "rf_within_tol": true,
+    "ridge_base_test": {
+      "R2_log": 0.8793,
+      "R2_raw": 0.8366,
+      "MAE_log": 0.1354,
+      "MAE_raw": 79089.9,
+      "RMSE_raw": 157183.3,
+      "MedAPE_pct": 9.95,
+      "alpha": 0.1,
+      "R2_train_log": 0.878,
+      "train_sec": 9.8
+    },
+    "rf_base_test": {
+      "R2_log": 0.8867,
+      "R2_raw": 0.8545,
+      "MAE_log": 0.1274,
+      "MAE_raw": 74653.5,
+      "RMSE_raw": 148314.2,
+      "MedAPE_pct": 8.83,
+      "R2_train_log": 0.9741,
+      "train_sec": 194.1
+    }
+  },
+  "cv": {
+    "ridge": {
+      "base": {
+        "mean": 0.8761,
+        "std": 0.0024,
+        "folds": [
+          0.8767,
+          0.879,
+          0.8719,
+          0.876,
+          0.8769
+        ],
+        "seconds": 13.0
+      },
+      "interactions_single": {
+        "mean": 0.8769,
+        "std": 0.0023,
+        "folds": [
+          0.8774,
+          0.8799,
+          0.8729,
+          0.8765,
+          0.8777
+        ],
+        "seconds": 14.7
+      },
+      "pair1_inter_zipgroup": {
+        "mean": 0.8633,
+        "std": 0.0019,
+        "folds": [
+          0.8623,
+          0.8643,
+          0.8616,
+          0.8616,
+          0.8666
+        ],
+        "seconds": 12.3
+      },
+      "pair2_inter_quad": {
+        "mean": 0.8768,
+        "std": 0.0023,
+        "folds": [
+          0.8773,
+          0.8799,
+          0.8728,
+          0.8765,
+          0.8777
+        ],
+        "seconds": 19.5
+      },
+      "triple": {
+        "mean": 0.8632,
+        "std": 0.0019,
+        "folds": [
+          0.8623,
+          0.8642,
+          0.8614,
+          0.8616,
+          0.8666
+        ],
+        "seconds": 13.1
+      }
+    },
+    "rf": {
+      "base": {
+        "mean": 0.8807,
+        "std": 0.0022,
+        "folds": [
+          0.8827,
+          0.8829,
+          0.8793,
+          0.8771,
+          0.8813
+        ],
+        "seconds": 271.5
+      },
+      "interactions_single": {
+        "mean": 0.8834,
+        "std": 0.0024,
+        "folds": [
+          0.8858,
+          0.8868,
+          0.882,
+          0.8808,
+          0.8814
+        ],
+        "seconds": 312.2
+      },
+      "pair1_inter_zipgroup": {
+        "mean": 0.8834,
+        "std": 0.0024,
+        "folds": [
+          0.8857,
+          0.8868,
+          0.8821,
+          0.8809,
+          0.8815
+        ],
+        "seconds": 326.0
+      },
+      "pair2_inter_quad": {
+        "mean": 0.8833,
+        "std": 0.0024,
+        "folds": [
+          0.8858,
+          0.8866,
+          0.8819,
+          0.8807,
+          0.8815
+        ],
+        "seconds": 333.7
+      },
+      "triple": {
+        "mean": 0.8833,
+        "std": 0.0024,
+        "folds": [
+          0.8857,
+          0.8868,
+          0.882,
+          0.8809,
+          0.8813
+        ],
+        "seconds": 333.9
+      }
+    }
+  },
+  "test_winner": {
+    "ridge": {
+      "R2_log": 0.8801,
+      "R2_raw": 0.839,
+      "MAE_log": 0.1348,
+      "MAE_raw": 78874.1,
+      "RMSE_raw": 156019.9,
+      "MedAPE_pct": 9.89,
+      "variant": "interactions_single",
+      "alpha": 0.1,
+      "R2_train_log": 0.8787,
+      "CV_R2_mean": 0.8769,
+      "CV_R2_std": 0.0023,
+      "train_sec": 4.2
+    },
+    "rf": {
+      "R2_log": 0.8887,
+      "R2_raw": 0.8551,
+      "MAE_log": 0.126,
+      "MAE_raw": 74015.8,
+      "RMSE_raw": 147985.3,
+      "MedAPE_pct": 8.94,
+      "variant": "interactions_single",
+      "R2_train_log": 0.9749,
+      "CV_R2_mean": 0.8834,
+      "CV_R2_std": 0.0024,
+      "train_sec": 185.4
+    }
+  }
+}
