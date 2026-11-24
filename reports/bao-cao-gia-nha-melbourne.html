@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="data:,">
+<title>Báo cáo giá nhà Melbourne — Ridge & Random Forest</title>
+<style>
+  :root{
+    --bg:#ffffff; --ink:#111111; --muted:#444444; --line:#d9d9d9; --soft:#f5f5f2;
+    --ridge:#1d4ed8; --rf:#047857; --warn:#b45309; --bad:#b91c1c;
+    --radius:10px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+    font-size:16.5px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px;margin:0 auto;padding:0 20px 64px}
+  h1{font-size:32px;line-height:1.2;margin:0 0 10px;letter-spacing:-.02em}
+  h2{font-size:23px;line-height:1.3;margin:0 0 8px;letter-spacing:-.01em}
+  h3{font-size:17px;margin:0 0 6px}
+  p{margin:0 0 12px}
+  small{font-size:13.5px;color:var(--muted)}
+  a{color:var(--ridge);text-underline-offset:3px}
+  button,summary{min-height:44px}
+  header{padding:36px 0 22px;border-bottom:2px solid var(--ink)}
+  .lead{font-size:18px;color:#222;max-width:660px}
+  .verdict{margin-top:18px;border:1.5px solid var(--ink);border-radius:var(--radius);padding:16px 18px;background:var(--soft)}
+  .verdict strong{font-size:17px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}
+  .stat{border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .stat b{display:block;font-size:20px;line-height:1.2}
+  .stat span{font-size:13px;color:var(--muted)}
+  nav{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);z-index:10;
+    display:flex;gap:4px;flex-wrap:wrap;padding:8px 0}
+  nav a{flex:0 0 auto;color:var(--ink);text-decoration:none;font-size:14.5px;font-weight:600;
+    padding:10px 12px;border-radius:8px;min-height:44px;display:flex;align-items:center}
+  nav a:hover{background:var(--soft)}
+  section{padding:30px 0 6px;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  .num{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  details{border:1px solid var(--line);border-radius:var(--radius);margin:10px 0;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-weight:700;display:flex;align-items:center;gap:8px;list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:"+";margin-left:auto;font-size:20px;font-weight:400}
+  details[open ] summary::after{content:"–"}
+  details .body{padding:0 16px 14px}
+  details .body p:last-child{margin-bottom:0}
+  .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 6px}
+  .tabs button{border:1.5px solid var(--ink);background:#fff;color:var(--ink);border-radius:999px;
+    padding:10px 16px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px}
+  .tabs button[aria-selected="true"]{background:var(--ink);color:#fff}
+  .chartbox{border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-top:8px}
+  .chartbox svg{width:100%;height:auto;display:block}
+  .takeaway{background:var(--soft);border-radius:8px;padding:12px 14px;margin-top:12px;font-size:15.5px}
+  .takeaway b{display:block;margin-bottom:2px}
+  .steps{margin-top:14px}
+  .step{display:flex;gap:14px;padding:14px 0;border-top:1px solid var(--line)}
+  .step:first-child{border-top:none}
+  .step-n{flex:0 0 34px;width:34px;height:34px;border-radius:50%;background:var(--ink);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;margin-top:2px}
+  .step h3{margin-bottom:2px}
+  .step p{margin-bottom:4px;font-size:15.5px}
+  .why{font-size:15px;color:#333}
+  .why b{color:var(--ink)}
+  .tablewrap{overflow-x:auto;margin:12px 0}
+  table{border-collapse:collapse;width:100%;font-size:15px;min-width:520px}
+  th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}
+  th:first-child,td:first-child{text-align:left}
+  thead th{border-bottom:2px solid var(--ink);font-size:14px}
+  tbody th{font-weight:700}
+  .win{font-weight:800}
+  .miss{color:var(--bad);font-weight:700}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
+  .card{border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+  .card.ridge{border-top:4px solid var(--ridge)}
+  .card.rf{border-top:4px solid var(--rf)}
+  .card ul{margin:6px 0 0;padding-left:18px}
+  .card li{margin-bottom:5px;font-size:15.5px}
+  .toggle{display:inline-flex;border:1.5px solid var(--ink);border-radius:999px;overflow:hidden;margin:10px 0 4px}
+  .toggle button{border:none;background:#fff;padding:10px 18px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px}
+  .toggle button[aria-pressed="true"]{background:var(--ink);color:#fff}
+  .bar-row{display:grid;grid-template-columns:170px 1fr 64px;gap:10px;align-items:center;margin:10px 0;font-size:15px}
+  .bar-track{background:#eee;border-radius:6px;height:26px;overflow:hidden}
+  .bar-fill{height:100%;border-radius:6px;transition:width .5s ease}
+  .fit3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:12px}
+  .fit3 .card h3{font-size:16px}
+  .fit3 .card p{font-size:15px;margin-bottom:6px}
+  .fit3 .card p:last-child{margin-bottom:0}
+  .card.badfit{border-top:4px solid var(--bad)}
+  .card.goodfit{border-top:4px solid var(--rf)}
+  .card.underfit{border-top:4px solid var(--warn)}
+  .tt-group{margin:16px 0 4px}
+  .tt-group h3{font-size:15.5px;margin-bottom:2px}
+  .tt-row{display:grid;grid-template-columns:118px 1fr 58px;gap:10px;align-items:center;margin:6px 0;font-size:14.5px}
+  .tt-row .bar-track{height:20px}
+  .tt-lab{color:var(--muted);font-size:14px}
+  .gap-ok{color:var(--rf);font-weight:700}
+  .gap-mid{color:var(--warn);font-weight:700}
+  footer{padding:26px 0 0;color:var(--muted);font-size:14px}
+  @media (max-width:640px){
+    h1{font-size:27px}
+    .stats{grid-template-columns:1fr 1fr}
+    .cards{grid-template-columns:1fr}
+    .fit3{grid-template-columns:1fr}
+    .tt-row{grid-template-columns:96px 1fr 52px;font-size:13.5px}
+    .bar-row{grid-template-columns:118px 1fr 56px;font-size:14px}
+    .tablewrap{overflow-x:visible}
+    table{min-width:0;font-size:14.5px}
+    table thead{display:none}
+    table,table tbody,table tr,table td,table th{display:block;width:100%}
+    table tr{border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-bottom:10px}
+    table td,table tbody th{border-bottom:none;padding:5px 0;text-align:left;display:flex;justify-content:space-between;gap:14px}
+    table td::before{content:attr(data-l);color:var(--muted);font-size:13.5px}
+  }
+  @media (prefers-reduced-motion:reduce){.bar-fill{transition:none} html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Một căn nhà ở Melbourne đáng giá bao nhiêu?</h1>
+  <p class="lead">Vẫn là bài toán định giá quen thuộc — nhìn vào đặc điểm và vị trí của một căn nhà để đoán giá bán của nó. Nhưng bộ dữ liệu Melbourne này “bẩn” hơn hẳn: gần một nửa số dòng thiếu diện tích xây dựng. Đây là bộ mà tiền xử lý quyết định kết quả nhiều nhất.</p>
+  <div class="verdict">
+    <strong>Kết luận ngắn gọn, nói thẳng:</strong> Random Forest đạt mốc R² 0,80 trên cả hai thang đo (0,869 trên log giá, 0,818 trên giá thật). Ridge thì thiếu một chút — 0,794 trên log giá và 0,758 trên giá thật — nên không qua mốc. Lý do nằm ở vị trí: giá nhà Melbourne chạy theo khu vực theo cách phi tuyến, và đó là sân của cây quyết định, không phải đường thẳng.
+  </div>
+  <div class="stats">
+    <div class="stat"><b>13.580</b><span>giao dịch nhà</span></div>
+    <div class="stat"><b>2016 – 2017</b><span>khoảng thời gian</span></div>
+    <div class="stat"><b>0,869</b><span>R² tốt nhất (log giá)</span></div>
+    <div class="stat"><b>10,39%</b><span>sai số trung vị tốt nhất</span></div>
+  </div>
+</header>
+
+<nav aria-label="Mục lục">
+  <a href="#bai-toan">Bài toán</a><a href="#du-lieu">Dữ liệu</a><a href="#eda">Khám phá</a>
+  <a href="#pipeline">Tiền xử lý</a><a href="#mo-hinh">Hai mô hình</a><a href="#kiem-tra">Kiểm tra học vẹt</a><a href="#ket-qua">Kết quả</a><a href="#ket-luan">Kết luận</a>
+</nav>
+
+<!-- 1 -->
+<section id="bai-toan">
+  <div class="num">Phần 1</div>
+  <h2>Bài toán chính: định giá nhà tại thời điểm giao dịch</h2>
+  <p>Nói rõ ngay từ đầu: đây là bài toán <strong>định giá</strong>, không phải dự báo tương lai. Mô hình nhận vào đặc điểm của một căn nhà ở Melbourne — số phòng, loại nhà, diện tích, khoảng cách tới trung tâm, khu vực — rồi ước lượng giá bán của chính căn nhà đó tại thời điểm giao dịch.</p>
+  <p>Trong kinh tế học, cách làm này gọi là <em>hedonic pricing</em>: giá nhà được hiểu là tổng giá trị của từng đặc điểm cấu thành nó. Nhà ở khu tốt thì đắt hơn, gần trung tâm thì đắt hơn — mô hình học xem mỗi đặc điểm “đáng” bao nhiêu tiền.</p>
+  <details>
+    <summary>Mở rộng: vì sao chia ngẫu nhiên, không chia theo thời gian?</summary>
+    <div class="body">
+      <p>Vì ta không đoán giá của ngày mai. Mọi giao dịch đều dùng để học quan hệ “đặc điểm → giá”, nên chia ngẫu nhiên 80/20 là hợp lý: 10.864 dòng để học, 2.716 dòng để kiểm tra trên những căn nhà mô hình chưa từng thấy.</p>
+      <p>Biến cần đoán là giá bán (AUD). Khi huấn luyện, mô hình học trên log của giá, và kết quả cuối được quy ngược về AUD để đọc. Báo cáo này trình bày điểm trên cả hai thang.</p>
+    </div>
+  </details>
+</section>
+
+<!-- 2 -->
+<section id="du-lieu">
+  <div class="num">Phần 2</div>
+  <h2>Dữ liệu lấy từ đâu?</h2>
+  <p>Bộ dữ liệu <strong>Melbourne Housing Snapshot</strong> trên Kaggle (tác giả đăng tải: dansbecker), file <code>melb_data.csv</code> gồm 13.580 dòng và 21 cột — mỗi dòng là một giao dịch nhà ở Melbourne (Úc) trong giai đoạn 2016–2017.</p>
+  <p><a href="https://www.kaggle.com/datasets/dansbecker/melbourne-housing-snapshot" target="_blank" rel="noopener">Xem bộ dữ liệu trên Kaggle: kaggle.com/datasets/dansbecker/melbourne-housing-snapshot</a></p>
+  <p>Mỗi căn nhà được mô tả bằng: khu vực (suburb), số phòng, loại nhà (nhà riêng / căn hộ / nhà phố), diện tích đất và diện tích xây dựng, năm xây, khoảng cách tới trung tâm thành phố, vùng (region) và tọa độ. Giá bán trung vị là 903.000 AUD, trung bình 1.075.684 AUD, cao nhất tới 9.000.000 AUD.</p>
+  <details>
+    <summary>Mở rộng: có cột nào “ăn gian” không?</summary>
+    <div class="body">
+      <p>Không. Kiểm tra kỹ rồi: không có cột nào trong file được tính ra từ giá bán — không có tỉ lệ hay giá trị nào suy ra từ Price cả. Nên mô hình không thể chép đáp án; điểm số ở đây là điểm thật.</p>
+      <p>Cái khó của bộ này không nằm ở rò rỉ, mà nằm ở chỗ dữ liệu thiếu rất nhiều — đó là chuyện của phần ngay dưới đây.</p>
+    </div>
+  </details>
+</section>
+
+<!-- 3 -->
+<section id="eda">
+  <div class="num">Phần 3</div>
+  <h2>Khám phá dữ liệu: bộ này bẩn ở đâu?</h2>
+  <p>Trước khi dạy mô hình, ta nhìn dữ liệu trước. Với Melbourne, bốn biểu đồ dưới đây cho thấy rõ: vấn đề lớn nhất không phải mô hình, mà là dữ liệu thiếu và lệch. Bấm qua từng biểu đồ để xem.</p>
+
+  <div class="tabs" role="tablist" aria-label="Chọn biểu đồ khám phá dữ liệu">
+    <button role="tab" aria-selected="true" data-chart="missing">Thiếu bao nhiêu?</button>
+    <button role="tab" aria-selected="false" data-chart="dist">Giá phân bố ra sao?</button>
+    <button role="tab" aria-selected="false" data-chart="corr">Cái gì kéo giá lên?</button>
+    <button role="tab" aria-selected="false" data-chart="region">Vùng nào đắt nhất?</button>
+  </div>
+
+  <div class="chartbox">
+    <div id="chartTitle" style="font-weight:700;margin-bottom:4px"></div>
+    <div id="chartHost"></div>
+    <div class="takeaway" id="chartNote"></div>
+  </div>
+
+  <details>
+    <summary>Mở rộng: ba phát hiện định hình toàn bộ phần xử lý phía sau</summary>
+    <div class="body">
+      <p><strong>Một, thiếu nặng nhất trong các bộ đã làm.</strong> 7.384 trên 13.580 dòng dính ít nhất một ô thiếu — hơn một nửa. Chỉ 6.858 dòng có đủ cả ba cột diện tích đất, diện tích xây dựng và năm xây. May mắn là cột giá không thiếu dòng nào.</p>
+      <p><strong>Hai, hai cột diện tích gần như không dùng thô được.</strong> Diện tích đất có 1.939 giá trị bằng 0 và giá trị lớn nhất là 433.014 m² — trong khi 99% số nhà chỉ dưới 2.960 m². Diện tích xây dựng cũng tương tự: lớn nhất 44.515 m² so với mức 99% chỉ 466 m². Đây rõ ràng là lỗi ghi dữ liệu lẫn vào, không phải nhà thật.</p>
+      <p><strong>Ba, có hai cột gần như trùng nhau.</strong> Số phòng (Rooms) và số phòng ngủ (Bedroom2) tương quan tới 0,94 — giữ cả hai chỉ làm mô hình rối thêm. Ngoài ra dữ liệu gần như không trùng lặp: 0 dòng trùng hoàn toàn, chỉ 1 dòng trùng theo khu vực, địa chỉ, ngày và giá.</p>
+    </div>
+  </details>
+</section>
+
+<!-- 4 -->
+<section id="pipeline">
+  <div class="num">Phần 4</div>
+  <h2>Tiền xử lý: 10 bước, mỗi bước đều có lý do</h2>
+  <p>Đây là phần nặng nhất của bài Melbourne. Dữ liệu gốc mà đưa thẳng vào mô hình thì kết quả sẽ tệ — không phải vì mô hình dở, mà vì dữ liệu thiếu và lệch quá nhiều. Chuỗi dưới đây xử lý từng vấn đề một, và mọi thông số đều chỉ học từ tập huấn luyện.</p>
+
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><div>
+      <h3>Bỏ 5 cột không giúp định giá</h3>
+      <p>Địa chỉ (Address), hãng môi giới (SellerG), mã bưu chính (Postcode), ngày bán (Date) và số phòng ngủ (Bedroom2).</p>
+      <p class="why"><b>Vì sao:</b> địa chỉ chỉ là nhãn của từng căn nhà. SellerG có tới 268 hãng — đó là ai bán, không phải đặc tính của căn nhà. Postcode trùng thông tin với suburb. Date không dùng vì đây là bài toán định giá tại thời điểm giao dịch, không phải dự báo. Còn Bedroom2 trùng Rooms tới 0,94 nên giữ Rooms là đủ.</p>
+    </div></div>
+    <div class="step"><div class="step-n">2</div><div>
+      <h3>Lấy log của giá</h3>
+      <p class="why"><b>Vì sao:</b> giá lệch phải mạnh — độ lệch (skew) 2,24, căn đắt nhất 9 triệu AUD gấp 10 lần căn trung vị. Lấy log kéo đuôi về: skew chỉ còn 0,18, gần như cân đối. Mô hình không còn bị vài căn siêu đắt chi phối, và sai số được tính theo tỉ lệ thay vì số tiền tuyệt đối.</p>
+    </div></div>
+    <div class="step"><div class="step-n">3</div><div>
+      <h3>Coi diện tích bằng 0 là dữ liệu thiếu</h3>
+      <p class="why"><b>Vì sao:</b> một căn nhà không thể có diện tích đất 0 m² — đó là lỗi ghi dữ liệu, không phải nhà không có đất. Mà log của 0 thì không tính được, nên phải xử lý bước này trước khi lấy log ở bước sau.</p>
+    </div></div>
+    <div class="step"><div class="step-n">4</div><div>
+      <h3>Lấy log diện tích đất và diện tích xây dựng</h3>
+      <p class="why"><b>Vì sao:</b> hai cột này lệch cực mạnh — skew lần lượt là 95 và 78, cao bất thường. Không lấy log thì Ridge sẽ bị vài giá trị khổng lồ kéo lệch hoàn toàn. Ở thang log, quan hệ diện tích – giá cũng gần tuyến tính hơn.</p>
+    </div></div>
+    <div class="step"><div class="step-n">5</div><div>
+      <h3>Tạo tuổi nhà và 2 cờ báo thiếu</h3>
+      <p>Tuổi nhà = 2017 − năm xây. Thêm hai cờ: nhà này có thiếu diện tích xây dựng không, có thiếu năm xây không.</p>
+      <p class="why"><b>Vì sao:</b> “tuổi nhà” dễ đọc hơn “năm xây” thô. Còn cờ thiếu dựa trên một ý đơn giản: việc một căn nhà thiếu hồ sơ tự nó cũng là thông tin — nhà thiếu hồ sơ thường khác nhà đủ hồ sơ. (Kết quả cuối cho thấy hai cờ này gần như không giúp thêm gì sau khi đã điền giá trị thiếu — xem phần kết quả — nhưng giữ lại để kiểm chứng điều đó vẫn đáng làm.)</p>
+    </div></div>
+    <div class="step"><div class="step-n">6</div><div>
+      <h3>Gộp 314 suburb thành 114 nhóm + “Other”</h3>
+      <p class="why"><b>Vì sao:</b> Melbourne có 314 suburb, mà 102 suburb có chưa tới 10 giao dịch. Mã hóa hết 314 suburb sẽ tạo 314 cột, phần lớn thưa thớt và vô dụng. Cách làm: chỉ giữ suburb có từ 30 dòng trở lên trong tập huấn luyện — được 114 suburb, chiếm 82,8% số dòng train — còn lại gộp chung thành “Other”. Danh sách này học từ tập train thôi, để không rò rỉ thông tin từ tập kiểm tra.</p>
+    </div></div>
+    <div class="step"><div class="step-n">7</div><div>
+      <h3>Điền giá trị thiếu bằng trung vị / giá trị thường gặp nhất</h3>
+      <p class="why"><b>Vì sao:</b> thiếu tới mức này thì xóa dòng là tự bắn vào chân — xóa hết dòng dính thiếu sẽ mất 54% dữ liệu. Điền vào là lựa chọn duy nhất hợp lý. Trung vị được chọn vì không bị giá trị cực đoan kéo lệch như trung bình, và mọi giá trị điền đều tính từ tập huấn luyện.</p>
+    </div></div>
+    <div class="step"><div class="step-n">8</div><div>
+      <h3>Chặn giá trị cực đoan ở mức 1% và 99%</h3>
+      <p class="why"><b>Vì sao:</b> sau khi lấy log vẫn còn những điểm cực đoan — diện tích đất 433.014 m², hay một căn nhà ghi năm xây 1196. Chặn (winsorise) giữ lại dòng dữ liệu nhưng giới hạn giá trị ở ngưỡng hợp lý theo tập train: nhà lạ vẫn là nhà lạ, chỉ là không còn chi phối cả mô hình. Giữ được thông tin hơn xóa dòng.</p>
+    </div></div>
+    <div class="step"><div class="step-n">9</div><div>
+      <h3>Mã hóa phân loại (One-Hot) và chuẩn hóa — chỉ cho Ridge</h3>
+      <p class="why"><b>Vì sao:</b> loại nhà, phương thức bán, vùng, hội đồng khu vực và suburb là tên gọi, không phải con số có thứ tự — tách thành cột riêng để mỗi nhóm có hệ số của chính nó. Ridge cần thêm bước chuẩn hóa thang đo vì nó phạt độ lớn hệ số, mọi đặc trưng phải đứng cùng một thang thì mức phạt mới công bằng. Random Forest không cần, vì cây chỉ chia dữ liệu theo ngưỡng.</p>
+    </div></div>
+    <div class="step"><div class="step-n">10</div><div>
+      <h3>Chia ngẫu nhiên 80/20 và khóa tập kiểm tra</h3>
+      <p class="why"><b>Vì sao:</b> 10.864 dòng để học, 2.716 dòng để chấm điểm. Mọi thông số xử lý ở trên — trung vị để điền, ngưỡng chặn, danh sách suburb, hệ số chuẩn hóa — chỉ học từ phần huấn luyện. Học từ toàn bộ dữ liệu thì điểm kiểm tra sẽ đẹp giả tạo.</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section id="mo-hinh">
+  <div class="num">Phần 5</div>
+  <h2>Hai mô hình, hai triết lý trái ngược</h2>
+  <div class="cards">
+    <div class="card ridge">
+      <h3>Ridge — đường thẳng có kỷ luật</h3>
+      <p>Ridge là hồi quy tuyến tính cộng thêm một “mức phạt”: hệ số nào phình quá to sẽ bị kéo nhỏ lại. Nhờ vậy mô hình vẫn ổn định khi nhiều cột mang thông tin gần giống nhau — và bộ này có rất nhiều cột khu vực chồng chéo nhau.</p>
+      <ul>
+        <li><strong>Áp vào bài này:</strong> học trên log giá, mức phạt α = 1,0 được chọn bằng kiểm chứng chéo 5 phần từ các mức 0,1 đến 1.000.</li>
+        <li><strong>Điểm mạnh:</strong> đọc được trực tiếp — mỗi suburb cộng hay trừ bao nhiêu vào giá đều nhìn thấy rõ trong hệ số.</li>
+        <li><strong>Điểm yếu:</strong> chỉ vẽ được quan hệ thẳng. Mà ở Melbourne, hiệu ứng vị trí lại cong và tương tác với loại nhà — đúng chỗ Ridge đuối nhất.</li>
+      </ul>
+    </div>
+    <div class="card rf">
+      <h3>Random Forest — hỏi ý kiến 300 cái cây</h3>
+      <p>Random Forest trồng 300 cây quyết định, mỗi cây nhìn dữ liệu theo một cách hơi khác nhau, rồi lấy trung bình dự đoán của cả rừng. Một cây dễ sai, nhưng cả rừng bỏ phiếu chung thì ổn định hơn nhiều.</p>
+      <ul>
+        <li><strong>Áp vào bài này:</strong> 300 cây, mỗi lá chứa tối thiểu 2 căn nhà, học trên cùng dữ liệu đã xử lý (trừ bước chuẩn hóa).</li>
+        <li><strong>Điểm mạnh:</strong> tự bắt được tương tác phi tuyến — ví dụ cùng loại nhà nhưng khác vùng và khác khoảng cách tới trung tâm thì giá khác hẳn.</li>
+        <li><strong>Điểm yếu:</strong> khó giải thích từng hệ số, dễ học thuộc tập huấn luyện, và không đoán ra ngoài khoảng giá đã từng thấy.</li>
+      </ul>
+    </div>
+  </div>
+  <details>
+    <summary>Mở rộng: khác biệt cốt lõi nằm ở đâu — và vì sao ở đây cây thắng?</summary>
+    <div class="body">
+      <p>Ridge đánh cược rằng quan hệ trong dữ liệu là thẳng. Random Forest không cược gì cả: nó để dữ liệu tự nói, đổi lại bằng khả năng giải thích kém hơn.</p>
+      <p>Ở Melbourne, cược “thẳng” thua: giá chạy theo vị trí theo cách phi tuyến — vùng, loại nhà và khoảng cách tới trung tâm tương tác lẫn nhau, không cộng dồn đơn giản được. Kết quả là Random Forest đạt 0,869 trong khi Ridge dừng ở 0,794. Ngược lại, ở bộ nhà Ấn Độ — nơi quan hệ gần tuyến tính sau khi lấy log — Ridge lại là mô hình thắng. Không có mô hình nào thắng mọi nơi; dữ liệu quyết định.</p>
+    </div>
+  </details>
+</section>
+
+<!-- 6 -->
+<section id="kiem-tra">
+  <div class="num">Phần 6</div>
+  <h2>Kiểm tra mô hình: học thật, học chưa tới, hay học vẹt?</h2>
+  <p>Điểm cao trên dữ liệu đã học chưa nói lên điều gì. Câu hỏi quan trọng hơn là: gặp một căn nhà hoàn toàn mới, mô hình còn đoán trúng không? Ba khái niệm dưới đây là cách người ta kiểm tra chuyện đó — bản chất rất giống chuyện học thi.</p>
+
+  <div class="fit3">
+    <div class="card underfit">
+      <h3>Underfitting — học chưa tới</h3>
+      <p>Mô hình quá đơn giản, chưa nắm được quy luật nên đoán dở <em>cả</em> trên dữ liệu đã học lẫn dữ liệu mới.</p>
+      <p><strong>Giống như:</strong> mới đọc lướt qua loa đã đi thi — đề cũ hay đề mới đều làm không được.</p>
+      <p><strong>Dấu hiệu:</strong> điểm lúc học thấp, điểm lúc kiểm tra cũng thấp, hai điểm sát nhau nhưng đều tệ.</p>
+    </div>
+    <div class="card goodfit">
+      <h3>Vừa khớp — học hiểu thật</h3>
+      <p>Mô hình nắm được quy luật chung — vị trí, loại nhà, khoảng cách ảnh hưởng tới giá ra sao — nên áp sang nhà mới vẫn đúng.</p>
+      <p><strong>Giống như:</strong> hiểu bản chất bài toán, gặp dạng đề lạ vẫn biết cách làm.</p>
+      <p><strong>Dấu hiệu:</strong> điểm lúc học và lúc kiểm tra đều khá, và chênh nhau rất ít.</p>
+    </div>
+    <div class="card badfit">
+      <h3>Overfitting — học vẹt</h3>
+      <p>Mô hình nhớ thuộc lòng cả những chi tiết ngẫu nhiên của dữ liệu đã học — kể cả nhiễu — thay vì học quy luật. Điểm lúc học rất cao, nhưng gặp dữ liệu mới thì tụt hẳn. “Học vẹt” chính là tên gọi đời thường của overfitting.</p>
+      <p><strong>Giống như:</strong> thuộc lòng từng đáp án trong đề ôn, đổi số liệu một chút là tịt.</p>
+      <p><strong>Dấu hiệu:</strong> điểm lúc học cao vọt, điểm lúc kiểm tra thấp hơn nhiều — khoảng cách giữa hai điểm càng lớn, học vẹt càng nặng.</p>
+    </div>
+  </div>
+
+  <details>
+    <summary>Mở rộng: cách kiểm tra cụ thể là gì?</summary>
+    <div class="body">
+      <p><strong>Một, so điểm học và điểm kiểm tra.</strong> Mô hình được chấm hai lần: một lần trên 10.864 căn đã dùng để học (điểm train), một lần trên 2.716 căn bị khóa lại từ đầu (điểm test). Lấy điểm train trừ điểm test ra “khoảng hở”. Khoảng hở gần 0 là khỏe; khoảng hở lớn là dấu hiệu học vẹt.</p>
+      <p><strong>Hai, kiểm chứng chéo 5 phần (cross-validation).</strong> Chia dữ liệu làm 5 phần, lần lượt lấy từng phần làm bài kiểm tra và học trên 4 phần còn lại, rồi lấy trung bình. Nếu cả 5 lần đều cho điểm gần bằng nhau và gần điểm test, kết quả không phải may mắn của một lần chia.</p>
+      <p><strong>Ba, đừng nhầm học vẹt với rò rỉ dữ liệu.</strong> Học vẹt là nhớ nhiễu trong phần đã học. Rò rỉ là được xem trước đáp án. Bài này đã kiểm tra ở Phần 2: không có cột rò rỉ nào, nên điểm test là điểm thật.</p>
+      <p>Nói theo ngôn ngữ thống kê: underfitting là <em>lệch</em> nhiều (bias cao — mô hình đơn giản quá nên sai có hệ thống), overfitting là <em>dao động</em> nhiều (variance cao — dữ liệu đổi một chút là kết quả đổi hẳn). Mô hình tốt nằm ở giữa hai cực đó.</p>
+    </div>
+  </details>
+
+  <h3 style="margin-top:20px">Áp vào hai mô hình ở bài này: điểm học so với điểm kiểm tra</h3>
+  <p>Số dưới đây là R² trên thang log giá — thang mô hình thực sự học. Thanh dài là điểm cao.</p>
+
+  <div class="tt-group">
+    <h3>Ridge — chênh lệch gần như bằng 0</h3>
+    <div class="tt-row"><span class="tt-lab">Lúc học (train)</span><div class="bar-track"><div class="bar-fill" style="background:var(--ridge);width:79.6%"></div></div><b>0,796</b></div>
+    <div class="tt-row"><span class="tt-lab">Kiểm tra (test)</span><div class="bar-track"><div class="bar-fill" style="background:var(--ridge);width:79.4%;opacity:.55"></div></div><b>0,794</b></div>
+    <p style="font-size:15px;margin-top:6px">Khoảng hở: <span class="gap-ok">0,002</span> — hai điểm gần như trùng nhau.</p>
+  </div>
+
+  <div class="tt-group">
+    <h3>Random Forest — có khoảng hở, nhưng trong tầm kiểm soát</h3>
+    <div class="tt-row"><span class="tt-lab">Lúc học (train)</span><div class="bar-track"><div class="bar-fill" style="background:var(--rf);width:96.8%"></div></div><b>0,968</b></div>
+    <div class="tt-row"><span class="tt-lab">Kiểm tra (test)</span><div class="bar-track"><div class="bar-fill" style="background:var(--rf);width:86.9%;opacity:.55"></div></div><b>0,869</b></div>
+    <p style="font-size:15px;margin-top:6px">Khoảng hở: <span class="gap-mid">0,099</span> — có học thuộc nhẹ, nhưng điểm kiểm tra vẫn cao và ổn định.</p>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Mô hình</th><th>R² lúc học</th><th>R² kiểm tra</th><th>Khoảng hở</th><th>Kiểm chứng 5-fold</th><th>Kết luận</th></tr></thead>
+      <tbody>
+        <tr><th>Đoán bằng giá trung bình</th><td data-l="R² lúc học">≈ 0</td><td data-l="R² kiểm tra">−0,000</td><td data-l="Khoảng hở">≈ 0</td><td data-l="Kiểm chứng 5-fold">—</td><td data-l="Kết luận">Học chưa tới (underfitting)</td></tr>
+        <tr><th>Ridge (α = 1,0)</th><td data-l="R² lúc học">0,796</td><td data-l="R² kiểm tra">0,794</td><td data-l="Khoảng hở">0,002</td><td data-l="Kiểm chứng 5-fold">0,788 ± 0,012</td><td data-l="Kết luận" class="win">Không học vẹt — trần của nó là do quan hệ phi tuyến</td></tr>
+        <tr><th>Random Forest</th><td data-l="R² lúc học">0,968</td><td data-l="R² kiểm tra">0,869</td><td data-l="Khoảng hở">0,099</td><td data-l="Kiểm chứng 5-fold">0,860 ± 0,010</td><td data-l="Kết luận" class="win">Học thuộc nhẹ, đã được kiềm chế</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cards">
+    <div class="card ridge">
+      <h3>Vì sao Ridge không bị học vẹt — và cũng không hẳn là học thiếu?</h3>
+      <ul>
+        <li><strong>Không học vẹt</strong> vì Ridge vốn “cứng”: nó chỉ được vẽ một quan hệ thẳng, lại bị mức phạt α = 1,0 kéo các hệ số nhỏ lại. Một mô hình bị ghìm như vậy không đủ linh hoạt để ghi nhớ từng chi tiết ngẫu nhiên của hơn 10.000 căn nhà. Bằng chứng: điểm học 0,796 và điểm kiểm tra 0,794 gần như bằng nhau, kiểm chứng 5-fold cũng trùng (0,788).</li>
+        <li><strong>Không qua mốc 0,80 không phải vì học chưa đủ.</strong> Ridge đã học được đúng mức mà một đường thẳng học được. Trần của nó nằm ở chỗ quan hệ vị trí – giá trong dữ liệu là phi tuyến, mà tuyến tính thì không bắt được. Đây là giới hạn của dạng mô hình, không phải lỗi huấn luyện.</li>
+      </ul>
+    </div>
+    <div class="card rf">
+      <h3>Vì sao Random Forest chỉ học thuộc nhẹ, chưa thành học vẹt?</h3>
+      <ul>
+        <li><strong>Nó có sẵn nguy cơ học vẹt:</strong> cây quyết định sâu có thể chia nhỏ dữ liệu tới mức ghi nhớ từng nhóm nhà riêng lẻ, nên điểm lúc học lên tới 0,968 — cao hơn điểm kiểm tra 0,099. Đây là học thuộc ở mức nhẹ, cần nhận diện chứ không nên giấu.</li>
+        <li><strong>Cái kiềm nó lại là cơ chế “cả rừng”:</strong> mỗi cây chỉ học trên một mẫu con rút ngẫu nhiên và chỉ xem một phần đặc trưng, rồi 300 cây lấy trung bình. Chi tiết ngẫu nhiên một cây nhớ được sẽ bị 299 cây còn lại pha loãng. Mỗi lá còn phải chứa tối thiểu 2 căn nhà, nên cây không được chia tới từng căn riêng lẻ.</li>
+        <li><strong>Bằng chứng nó vẫn “hiểu bài”:</strong> kiểm chứng chéo 5 phần cho 0,860 ± 0,010 — sát điểm kiểm tra 0,869 và dao động nhỏ. Nếu rừng chỉ học vẹt, điểm đã sụp mạnh và nhảy loạn mỗi lần đổi phần dữ liệu kiểm tra.</li>
+      </ul>
+    </div>
+  </div>
+
+  <details>
+    <summary>Mở rộng: nếu mô hình bị học vẹt thì chữa thế nào?</summary>
+    <div class="body">
+      <p>Nguyên tắc chung là làm mô hình “bớt tự do” lại hoặc cho nó thêm dữ liệu. Với Ridge: tăng α để phạt hệ số mạnh hơn. Với Random Forest: giảm độ sâu cây, tăng số nhà tối thiểu trong mỗi lá, hoặc tăng số cây để trung bình mượt hơn. Thêm dữ liệu học cũng giúp — càng nhiều nhà thật, mô hình càng khó ghi nhớ từng căn và buộc phải học quy luật chung.</p>
+      <p>Ở bài này chưa cần chữa gì thêm: Ridge đã cân bằng sẵn, còn khoảng hở 0,099 của Random Forest là cái giá chấp nhận được để đổi lấy điểm kiểm tra cao nhất — nó chỉ thành vấn đề nếu khoảng hở phình to trong khi điểm kiểm tra tụt xuống.</p>
+    </div>
+  </details>
+</section>
+
+<!-- 7 -->
+<section id="ket-qua">
+  <div class="num">Phần 7</div>
+  <h2>Kết quả: Random Forest qua mốc 0,80 — Ridge thiếu một chút</h2>
+  <p>R² cho biết mô hình giải thích được bao nhiêu phần biến động của giá: 1,0 là hoàn hảo, 0 là ngang với đoán bừa bằng giá trung bình. Vì mô hình học trên log giá, báo cáo trình bày cả hai thang — chấm trên log giá và chấm lại sau khi quy về AUD. Bấm để chuyển thang:</p>
+
+  <div class="toggle" role="group" aria-label="Chọn thang đo R²">
+    <button id="btnLog" aria-pressed="true">Thang log giá</button>
+    <button id="btnRaw" aria-pressed="false">Thang giá thật (AUD)</button>
+  </div>
+  <div id="r2bars" aria-live="polite"></div>
+  <p><small id="r2note"></small></p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Mô hình</th><th>R² (log)</th><th>R² (AUD)</th><th>Sai số TB (AUD)</th><th>Sai số % trung vị</th><th>Kiểm chứng 5-fold</th></tr></thead>
+      <tbody>
+        <tr><th>Đoán bằng giá trung bình</th><td data-l="R² (log)">−0,000</td><td data-l="R² (AUD)">−0,055</td><td data-l="Sai số TB (AUD)">440.154</td><td data-l="Sai số % trung vị">34,66%</td><td data-l="Kiểm chứng 5-fold">—</td></tr>
+        <tr><th>Ridge (α = 1,0)</th><td data-l="R² (log)" class="miss">0,794</td><td data-l="R² (AUD)" class="miss">0,758</td><td data-l="Sai số TB (AUD)">198.759</td><td data-l="Sai số % trung vị">14,83%</td><td data-l="Kiểm chứng 5-fold">0,788 ± 0,012</td></tr>
+        <tr><th>Random Forest</th><td data-l="R² (log)" class="win">0,869</td><td data-l="R² (AUD)" class="win">0,818</td><td data-l="Sai số TB (AUD)" class="win">158.610</td><td data-l="Sai số % trung vị" class="win">10,39%</td><td data-l="Kiểm chứng 5-fold" class="win">0,860 ± 0,010</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Nói cho công bằng: cả hai mô hình đều bỏ rất xa cách đoán ngây thơ — sai số trung vị giảm từ gần 35% xuống còn khoảng 10–15%. Nhưng nếu lấy mốc 0,80 làm chuẩn thì chỉ Random Forest qua được, ở cả hai thang. Ridge dừng ở 0,794 trên thang log — thiếu đúng một chút, và báo cáo này ghi rõ như vậy thay vì làm tròn lên.</p>
+
+  <details>
+    <summary>Mở rộng: mô hình nào “nhìn” vào đâu khi đoán?</summary>
+    <div class="body">
+      <p><strong>Random Forest xếp vị trí lên đầu, rất rõ:</strong> vùng (Regionname) và loại nhà (Type) là hai tín hiệu mạnh nhất — làm xáo trộn một trong hai, R² giảm tới 0,336. Tiếp theo là khoảng cách tới trung tâm (0,206), số phòng (0,131), kinh độ (0,128) và log diện tích đất (0,118). Diện tích xây dựng chỉ đóng góp 0,025, tuổi nhà 0,007 — và hai cờ báo thiếu gần như bằng 0: sau khi đã điền giá trị thiếu, việc “có thiếu hay không” không còn giúp gì thêm.</p>
+      <p><strong>Ridge thì kể câu chuyện khu vực bằng hệ số cụ thể:</strong> hệ số suburb lớn nhất là Sunbury (+0,581) ở chiều cộng và Heidelberg West (−0,559), Heidelberg Heights (−0,383), Werribee (−0,343) ở chiều trừ; nhà dạng căn hộ (unit) bị trừ 0,286 so với nhà riêng, còn vùng Western Metropolitan bị trừ 0,262. Đọc chung lại: giá chủ yếu chạy theo khu vực, và căn hộ rẻ hơn nhà riêng hẳn một bậc.</p>
+      <p><strong>Một ví dụ thật trong tập kiểm tra:</strong> căn nhà bán 2.600.000 AUD — Ridge đoán 2.175.376 AUD, Random Forest đoán 2.176.653 AUD. Cả hai đều đoán thấp. Đây là mẫu số chung: phần dư của Random Forest gần như không lệch ở các nhóm giá thường, nhưng độ tản mát tăng dần ở nhóm nhà đắt nhất — nhà đắt ít và mỗi căn một vẻ, nên khó đoán hơn.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Mở rộng: có nên tin con số này không?</summary>
+    <div class="body">
+      <p>Có cơ sở để tin. Kiểm chứng chéo 5 phần cho kết quả sát điểm trên tập kiểm tra và dao động nhỏ ở cả hai mô hình, nên đây không phải may mắn của một lần chia dữ liệu.</p>
+      <p>Cũng phải nói thẳng hai điểm chưa đẹp: Random Forest có học thuộc nhẹ tập huấn luyện (phân tích đầy đủ ở Phần 6), và phần lớn thông tin diện tích xây dựng trong dữ liệu là giá trị được điền vào chứ không phải số đo thật — kết quả vì thế phụ thuộc vào cách điền, như sẽ nói ở phần hạn chế.</p>
+    </div>
+  </details>
+</section>
+
+<!-- 8 -->
+<section id="ket-luan">
+  <div class="num">Phần 8</div>
+  <h2>Kết luận và ý nghĩa thực tế</h2>
+  <p>Giá nhà Melbourne quyết định bởi ba thứ, theo đúng thứ tự này: <strong>khu vực, loại nhà, và khoảng cách tới trung tâm</strong>. Vùng Southern Metropolitan có giá trung bình 1.372.963 AUD — đắt gấp khoảng 3,5 lần vùng rẻ nhất là Western Victoria (397.523 AUD). Người mua trả thêm cho khu vực tốt và nhà riêng; người bán ở suburb xa trung tâm phải chấp nhận mặt bằng giá thấp hơn hẳn. Diện tích đất và diện tích nhà chỉ là yếu tố phụ, sau khi đã tính vị trí.</p>
+  <p>Về mô hình: nếu cần một con số chính xác nhất để định giá, chọn Random Forest. Nếu cần giải thích <em>vì sao</em> căn nhà có giá đó — suburb nào cộng, suburb nào trừ — Ridge trình bày rõ hơn nhiều, dù điểm của nó thấp hơn và chưa qua mốc 0,80 ở bộ này.</p>
+  <details>
+    <summary>Mở rộng: những hạn chế phải thừa nhận</summary>
+    <div class="body">
+      <p><strong>Thiếu dữ liệu quá nặng.</strong> Diện tích xây dựng thiếu 47,5% — nghĩa là gần một nửa thông tin về cột này là giá trị điền vào, không phải đo thật. Đổi cách điền là kết quả có thể đổi theo; đây là hạn chế lớn nhất của bài.</p>
+      <p><strong>Phạm vi hẹp.</strong> Dữ liệu chỉ là Melbourne giai đoạn 2016–2017, không suy ra được cho thị trường khác hay giai đoạn khác.</p>
+      <p><strong>Giới hạn của từng mô hình.</strong> Ridge không đạt mốc 0,80 vì quan hệ trong dữ liệu là phi tuyến. Random Forest đạt mốc nhưng có overfit nhẹ, và nó không ngoại suy được — gặp căn nhà đắt hơn mọi căn từng thấy, nó sẽ đoán thấp hơn giá thật, như ví dụ 2,6 triệu AUD ở phần kết quả.</p>
+    </div>
+  </details>
+</section>
+
+<footer>
+  <p>Nguồn dữ liệu: “Melbourne Housing Snapshot” — Kaggle, dansbecker/melbourne-housing-snapshot. Toàn bộ số liệu trong báo cáo lấy từ một lần chạy phân tích duy nhất: chia ngẫu nhiên 80/20 (mã hạt giống 42), kiểm chứng chéo 5 phần, đánh giá trên 2.716 giao dịch kiểm tra.</p>
+</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var INK="#111111", RIDGE="#1d4ed8", RF="#047857", WARN="#b45309", BAD="#b91c1c", GRID="#e2e2e2", MUT="#555555";
+
+  function svgEl(tag, attrs){
+    var el=document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for(var k in attrs) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+  function hbars(host, data, opts){
+    var W=760, rowH=34, top=8, labelW=210, valW=90;
+    var H=top + data.length*rowH + 6;
+    var svg=svgEl("svg",{viewBox:"0 0 "+W+" "+H, role:"img", "aria-label":opts.title});
+    data.forEach(function(d,i){
+      var y=top+i*rowH;
+      var t=svgEl("text",{x:labelW-10,y:y+rowH/2+5,"text-anchor":"end","font-size":"14.5",fill:INK});
+      t.textContent=d.label; svg.appendChild(t);
+      var bw=(W-labelW-valW)*Math.max(d.value,0)/opts.max;
+      svg.appendChild(svgEl("rect",{x:labelW,y:y+5,width:bw,height:rowH-12,rx:5,fill:d.color||RIDGE}));
+      var v=svgEl("text",{x:labelW+bw+8,y:y+rowH/2+5,"font-size":"14.5","font-weight":"700",fill:INK});
+      v.textContent=d.fmt; svg.appendChild(v);
+    });
+    host.innerHTML=""; host.appendChild(svg);
+  }
+  function distChart(host){
+    var W=760,H=300,base=248,left=56,right=16,top=26,max=9000000;
+    var svg=svgEl("svg",{viewBox:"0 0 "+W+" "+H,role:"img","aria-label":"Biểu đồ các mốc phân bố của giá nhà Melbourne"});
+    [[0,"0"],[3000000,"3 tr"],[6000000,"6 tr"],[9000000,"9 tr"]].forEach(function(tk){
+      var y=base-(base-top)*(tk[0]/max);
+      svg.appendChild(svgEl("line",{x1:left,x2:W-right,y1:y,y2:y,stroke:GRID,"stroke-width":1}));
+      var t=svgEl("text",{x:left-8,y:y+4,"text-anchor":"end","font-size":"12.5",fill:MUT}); t.textContent=tk[1]; svg.appendChild(t);
+    });
+    var data=[
+      {label:"Giá tối thiểu",value:85000,fmt:"85 nghìn",color:"#888888"},
+      {label:"Trung vị",value:903000,fmt:"903 nghìn",color:RIDGE,sub:"một nửa số nhà rẻ hơn mức này"},
+      {label:"Trung bình",value:1075684,fmt:"1,08 triệu",color:RIDGE,sub:"bị nhà đắt kéo lên"},
+      {label:"Giá tối đa",value:9000000,fmt:"9 triệu",color:BAD,sub:"gấp 10 lần trung vị"}
+    ];
+    var slot=(W-left-right)/data.length, bw=Math.min(120,slot*0.5);
+    data.forEach(function(d,i){
+      var cx=left+slot*i+slot/2, hh=(base-top)*(d.value/max); if(hh<4)hh=4;
+      svg.appendChild(svgEl("rect",{x:cx-bw/2,y:base-hh,width:bw,height:hh,rx:6,fill:d.color}));
+      var v=svgEl("text",{x:cx,y:base-hh-8,"text-anchor":"middle","font-size":"14.5","font-weight":"700",fill:INK}); v.textContent=d.fmt; svg.appendChild(v);
+      var l=svgEl("text",{x:cx,y:base+22,"text-anchor":"middle","font-size":"13.5",fill:INK}); l.textContent=d.label; svg.appendChild(l);
+      if(d.sub){var s=svgEl("text",{x:cx,y:base+40,"text-anchor":"middle","font-size":"11.5",fill:MUT}); s.textContent=d.sub; svg.appendChild(s);}
+    });
+    svg.appendChild(svgEl("line",{x1:left,x2:W-right,y1:base,y2:base,stroke:INK,"stroke-width":1.5}));
+    host.innerHTML=""; host.appendChild(svg);
+  }
+
+  var charts={
+    missing:{title:"Tỉ lệ dữ liệu thiếu theo cột — diện tích xây dựng thiếu gần một nửa",
+      draw:function(h){ hbars(h,[
+        {label:"Diện tích xây dựng",value:47.5,fmt:"47,5% · 6.450 dòng",color:BAD},
+        {label:"Năm xây",value:39.6,fmt:"39,6% · 5.375 dòng",color:BAD},
+        {label:"Hội đồng khu vực",value:10.1,fmt:"10,1% · 1.369 dòng",color:WARN},
+        {label:"Số chỗ để xe",value:0.5,fmt:"0,5% · 62 dòng",color:"#888888"}
+      ],{max:55,title:"Biểu đồ tỉ lệ thiếu dữ liệu theo cột"});},
+      note:"<b>Đọc biểu đồ:</b> đây là vấn đề số một của bộ Melbourne. Hơn một nửa số dòng (7.384 trên 13.580) dính ít nhất một ô thiếu, nên xóa dòng là tự loại bỏ quá nửa dữ liệu. Hướng xử lý bắt buộc phải là điền giá trị thiếu — và vì gần một nửa cột diện tích xây dựng là số được điền vào, kết quả cuối sẽ phụ thuộc vào cách điền. Cột giá thì may mắn không thiếu dòng nào."},
+    dist:{title:"Phân bố giá — trung vị 903.000 AUD nhưng đuôi phải kéo rất dài",
+      draw:distChart,
+      note:"<b>Đọc biểu đồ:</b> trung bình (1,08 triệu) cao hơn trung vị (903 nghìn) khoảng 173.000 AUD — dấu hiệu kinh điển của phân bố lệch phải: một số ít nhà rất đắt kéo mọi thống kê lên. Độ lệch của giá là 2,24; sau khi lấy log chỉ còn 0,18, gần như cân đối. Đó là lý do toàn bộ mô hình học trên log giá."},
+    corr:{title:"Tương quan với giá bán — số phòng dẫn đầu, diện tích gần như im lặng",
+      draw:function(h){ hbars(h,[
+        {label:"Số phòng",value:0.497,fmt:"0,50",color:RF},
+        {label:"Số phòng ngủ",value:0.476,fmt:"0,48",color:RF},
+        {label:"Số phòng tắm",value:0.467,fmt:"0,47"},
+        {label:"Diện tích xây dựng",value:0.091,fmt:"0,09",color:"#888888"},
+        {label:"Diện tích đất",value:0.038,fmt:"0,04",color:"#888888"}
+      ],{max:0.6,title:"Biểu đồ tương quan giữa các đặc trưng và giá bán"});},
+      note:"<b>Đọc biểu đồ:</b> lạ ở chỗ diện tích đất và diện tích xây dựng — hai thứ tưởng như phải quyết định giá — lại gần như không tương quan tuyến tính với giá (0,04 và 0,09). Một phần vì hai cột này quá bẩn (thiếu nhiều, lẫn giá trị 0 và giá trị khổng lồ), một phần vì ở Melbourne vị trí lấn át diện tích. Ngược lại, năm xây tương quan âm −0,32: nhà càng cũ càng rẻ. Và số phòng với số phòng ngủ tương quan với nhau tới 0,94 — gần như cùng một thông tin."},
+    region:{title:"Giá trung bình theo vùng — đắt nhất gấp khoảng 3,5 lần rẻ nhất",
+      draw:function(h){ hbars(h,[
+        {label:"Southern Metropolitan",value:1372963,fmt:"1,37 tr AUD",color:WARN},
+        {label:"Toàn thành phố (trung bình)",value:1075684,fmt:"1,08 tr AUD",color:RIDGE},
+        {label:"Western Victoria",value:397523,fmt:"398 nghìn AUD",color:"#888888"}
+      ],{max:1500000,title:"Biểu đồ giá trung bình theo vùng ở Melbourne"});},
+      note:"<b>Đọc biểu đồ:</b> vị trí là tiền. Chỉ riêng chuyện căn nhà nằm ở vùng nào đã tạo ra khoảng chênh hơn 3 lần về giá trung bình — trước cả khi xét diện tích hay số phòng. Đây là manh mối sớm cho thấy quan hệ vị trí – giá ở Melbourne không đơn giản là cộng trừ tuyến tính, và nó sẽ quay lại ở phần kết quả: Random Forest xếp vùng là tín hiệu quan trọng nhất, còn Ridge thì chật vật dưới mốc 0,80."}
+  };
+
+  var titleEl=document.getElementById("chartTitle"), host=document.getElementById("chartHost"), note=document.getElementById("chartNote");
+  function showChart(key){
+    var c=charts[key]; if(!c) return;
+    titleEl.textContent=c.title; c.draw(host); note.innerHTML=c.note;
+    document.querySelectorAll(".tabs button").forEach(function(b){
+      b.setAttribute("aria-selected", b.getAttribute("data-chart")===key ? "true":"false");
+    });
+  }
+  document.querySelectorAll(".tabs button").forEach(function(b){
+    b.addEventListener("click", function(){ showChart(b.getAttribute("data-chart")); });
+  });
+  showChart("missing");
+
+  var r2data={
+    log:{rows:[
+      {label:"Đoán bằng giá trung bình",value:0,display:"−0,000",color:"#999999"},
+      {label:"Ridge",value:0.7936,display:"0,794",color:RIDGE},
+      {label:"Random Forest",value:0.8685,display:"0,869",color:RF}],
+      note:"Thang log giá là thang mô hình thực sự học. Random Forest vượt mốc 0,80 rõ ràng; Ridge dừng ở 0,794 — thiếu một chút, không làm tròn lên được."},
+    raw:{rows:[
+      {label:"Đoán bằng giá trung bình",value:0,display:"−0,055",color:"#999999"},
+      {label:"Ridge",value:0.7583,display:"0,758",color:RIDGE},
+      {label:"Random Forest",value:0.8175,display:"0,818",color:RF}],
+      note:"Quy về AUD, R² giảm ở cả hai mô hình — chuyện bình thường, vì sai số ở nhóm nhà đắt bị phóng đại khi đổi về tiền thật. Random Forest vẫn giữ trên 0,80; Ridge thì tụt xa hơn, còn 0,758."}
+  };
+  var r2host=document.getElementById("r2bars"), r2note=document.getElementById("r2note");
+  var btnLog=document.getElementById("btnLog"), btnRaw=document.getElementById("btnRaw");
+  function showR2(mode){
+    var d=r2data[mode];
+    r2host.innerHTML="";
+    d.rows.forEach(function(r){
+      var row=document.createElement("div"); row.className="bar-row";
+      var lab=document.createElement("span"); lab.textContent=r.label;
+      var track=document.createElement("div"); track.className="bar-track";
+      var fill=document.createElement("div"); fill.className="bar-fill";
+      fill.style.background=r.color; fill.style.width="0%";
+      track.appendChild(fill);
+      var val=document.createElement("b"); val.textContent=r.display;
+      row.appendChild(lab); row.appendChild(track); row.appendChild(val);
+      r2host.appendChild(row);
+      requestAnimationFrame(function(){ requestAnimationFrame(function(){ fill.style.width=(Math.max(r.value,0)*100).toFixed(1)+"%"; }); });
+    });
+    r2note.textContent=d.note;
+    btnLog.setAttribute("aria-pressed", mode==="log"?"true":"false");
+    btnRaw.setAttribute("aria-pressed", mode==="raw"?"true":"false");
+  }
+  btnLog.addEventListener("click",function(){showR2("log");});
+  btnRaw.addEventListener("click",function(){showR2("raw");});
+  showR2("log");
+})();
+</script>
+</body>
+</html>

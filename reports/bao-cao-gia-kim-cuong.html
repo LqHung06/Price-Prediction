@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="data:,">
+<title>Báo cáo giá kim cương — Ridge &amp; Random Forest</title>
+<style>
+  :root{
+    --bg:#ffffff; --ink:#111111; --muted:#444444; --line:#d9d9d9; --soft:#f5f5f2;
+    --ridge:#1d4ed8; --rf:#047857; --warn:#b45309; --bad:#b91c1c;
+    --radius:10px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+    font-size:16.5px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px;margin:0 auto;padding:0 20px 64px}
+  h1{font-size:32px;line-height:1.2;margin:0 0 10px;letter-spacing:-.02em}
+  h2{font-size:23px;line-height:1.3;margin:0 0 8px;letter-spacing:-.01em}
+  h3{font-size:17px;margin:0 0 6px}
+  p{margin:0 0 12px}
+  .muted{color:var(--muted)}
+  small{font-size:13.5px;color:var(--muted)}
+  a{color:var(--ridge);text-underline-offset:3px}
+  button,summary{min-height:44px}
+  header{padding:36px 0 22px;border-bottom:2px solid var(--ink)}
+  .lead{font-size:18px;color:#222;max-width:640px}
+  .verdict{margin-top:18px;border:1.5px solid var(--ink);border-radius:var(--radius);padding:16px 18px;background:var(--soft)}
+  .verdict strong{font-size:17px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}
+  .stat{border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .stat b{display:block;font-size:20px;line-height:1.2}
+  .stat span{font-size:13px;color:var(--muted)}
+  nav{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);z-index:10;
+    display:flex;gap:4px;flex-wrap:wrap;padding:8px 0}
+  nav a{flex:0 0 auto;color:var(--ink);text-decoration:none;font-size:14.5px;font-weight:600;
+    padding:10px 12px;border-radius:8px;min-height:44px;display:flex;align-items:center}
+  nav a:hover{background:var(--soft)}
+  section{padding:30px 0 6px;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  .num{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  details{border:1px solid var(--line);border-radius:var(--radius);margin:10px 0;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-weight:700;display:flex;align-items:center;gap:8px;list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:"+";margin-left:auto;font-size:20px;font-weight:400}
+  details[open ] summary::after{content:"–"}
+  details .body{padding:0 16px 14px}
+  details .body p:last-child{margin-bottom:0}
+  .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 6px}
+  .tabs button{border:1.5px solid var(--ink);background:#fff;color:var(--ink);border-radius:999px;
+    padding:10px 16px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px}
+  .tabs button[aria-selected="true"]{background:var(--ink);color:#fff}
+  .chartbox{border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-top:8px}
+  .chartbox svg{width:100%;height:auto;display:block}
+  .takeaway{background:var(--soft);border-radius:8px;padding:12px 14px;margin-top:12px;font-size:15.5px}
+  .takeaway b{display:block;margin-bottom:2px}
+  .steps{counter-reset:step;margin-top:14px}
+  .step{display:flex;gap:14px;padding:14px 0;border-top:1px solid var(--line)}
+  .step:first-child{border-top:none}
+  .step-n{flex:0 0 34px;width:34px;height:34px;border-radius:50%;background:var(--ink);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;margin-top:2px}
+  .step h3{margin-bottom:2px}
+  .step p{margin-bottom:4px;font-size:15.5px}
+  .why{font-size:15px;color:#333}
+  .why b{color:var(--ink)}
+  .tablewrap{overflow-x:auto;margin:12px 0}
+  table{border-collapse:collapse;width:100%;font-size:15px;min-width:520px}
+  th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}
+  th:first-child,td:first-child{text-align:left}
+  thead th{border-bottom:2px solid var(--ink);font-size:14px}
+  tbody th{font-weight:700}
+  .win{font-weight:800}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
+  .card{border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+  .card.ridge{border-top:4px solid var(--ridge)}
+  .card.rf{border-top:4px solid var(--rf)}
+  .card ul{margin:6px 0 0;padding-left:18px}
+  .card li{margin-bottom:5px;font-size:15.5px}
+  .toggle{display:inline-flex;border:1.5px solid var(--ink);border-radius:999px;overflow:hidden;margin:10px 0 4px}
+  .toggle button{border:none;background:#fff;padding:10px 18px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px}
+  .toggle button[aria-pressed="true"]{background:var(--ink);color:#fff}
+  .bar-row{display:grid;grid-template-columns:150px 1fr 64px;gap:10px;align-items:center;margin:10px 0;font-size:15px}
+  .bar-track{background:#eee;border-radius:6px;height:26px;overflow:hidden}
+  .bar-fill{height:100%;border-radius:6px;transition:width .5s ease}
+  .fit3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:12px}
+  .fit3 .card h3{font-size:16px}
+  .fit3 .card p{font-size:15px;margin-bottom:6px}
+  .fit3 .card p:last-child{margin-bottom:0}
+  .card.badfit{border-top:4px solid var(--bad)}
+  .card.goodfit{border-top:4px solid var(--rf)}
+  .card.underfit{border-top:4px solid var(--warn)}
+  .tt-group{margin:16px 0 4px}
+  .tt-group h3{font-size:15.5px;margin-bottom:2px}
+  .tt-row{display:grid;grid-template-columns:118px 1fr 58px;gap:10px;align-items:center;margin:6px 0;font-size:14.5px}
+  .tt-row .bar-track{height:20px}
+  .tt-lab{color:var(--muted);font-size:14px}
+  .gap-ok{color:var(--rf);font-weight:700}
+  .gap-mid{color:var(--warn);font-weight:700}
+  footer{padding:26px 0 0;color:var(--muted);font-size:14px}
+  @media (max-width:640px){
+    h1{font-size:27px}
+    .stats{grid-template-columns:1fr 1fr}
+    .cards{grid-template-columns:1fr}
+    .fit3{grid-template-columns:1fr}
+    .tt-row{grid-template-columns:96px 1fr 52px;font-size:13.5px}
+    .bar-row{grid-template-columns:110px 1fr 56px;font-size:14px}
+    .tablewrap{overflow-x:visible}
+    table{min-width:0;font-size:14.5px}
+    table thead{display:none}
+    table,table tbody,table tr,table td,table th{display:block;width:100%}
+    table tr{border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-bottom:10px}
+    table td,table tbody th{border-bottom:none;padding:5px 0;text-align:left;display:flex;justify-content:space-between;gap:14px}
+    table td::before{content:attr(data-l);color:var(--muted);font-size:13.5px}
+  }
+  @media (prefers-reduced-motion:reduce){.bar-fill{transition:none} html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Một viên kim cương đáng giá bao nhiêu?</h1>
+  <p class="lead">Bài toán ở đây rất đời thường: nhìn vào 4C của một viên kim cương — carat, cách cắt, màu, độ trong — liệu có đoán được giá bán của nó không, và đoán trúng tới đâu? Báo cáo này trả lời bằng hai mô hình, Ridge và Random Forest, trên hơn 53.000 viên kim cương thật.</p>
+  <div class="verdict">
+    <strong>Kết luận ngắn gọn:</strong> cả hai mô hình đều đoán gần như hoàn hảo, Random Forest nhỉnh hơn một chút. Nhưng nói thẳng ngay từ đầu: bài này dễ một cách đặc biệt — giá kim cương gần như được quyết định cơ học bởi kích thước, nên R² ~0,99 ở đây là mốc trần để đối chiếu, không phải bằng chứng mô hình giỏi.
+  </div>
+  <div class="stats">
+    <div class="stat"><b>53.940</b><span>viên kim cương</span></div>
+    <div class="stat"><b>$326 – $18.823</b><span>khoảng giá bán</span></div>
+    <div class="stat"><b>0,988</b><span>R² tốt nhất (log giá)</span></div>
+    <div class="stat"><b>5,78%</b><span>sai số trung vị tốt nhất</span></div>
+  </div>
+</header>
+
+<nav aria-label="Mục lục">
+  <a href="#bai-toan">Bài toán</a><a href="#du-lieu">Dữ liệu</a><a href="#eda">Khám phá</a>
+  <a href="#pipeline">Tiền xử lý</a><a href="#mo-hinh">Hai mô hình</a><a href="#kiem-tra">Kiểm tra học vẹt</a><a href="#ket-qua">Kết quả</a><a href="#ket-luan">Kết luận</a>
+</nav>
+
+<!-- 1 -->
+<section id="bai-toan">
+  <div class="num">Phần 1</div>
+  <h2>Bài toán chính: định giá kim cương từ 4C</h2>
+  <p>Nói cho rõ ngay từ đầu: đây là bài toán <strong>định giá</strong>, không phải dự báo tương lai. Mô hình nhận vào đặc điểm của một viên kim cương — nặng bao nhiêu carat, cắt kiểu gì, màu nào, trong tới đâu, kích thước ra sao — rồi ước lượng giá bán của chính viên đó.</p>
+  <p>Trong kinh tế học, cách làm này có tên là <em>hedonic pricing</em>: giá của một món hàng được hiểu là tổng giá trị của từng đặc điểm cấu thành nó. Với kim cương, ngành này vốn đã có bảng giá 4C gần như chuẩn, nên bài toán này giống việc “học lại công thức định giá có sẵn” hơn là khám phá một thị trường bí ẩn.</p>
+  <details>
+    <summary>Mở rộng: vì sao không chia dữ liệu theo thời gian?</summary>
+    <div class="body">
+      <p>Vì bộ dữ liệu không có cột thời gian nào, và ta cũng không đoán giá của ngày mai. Mọi viên kim cương trong file đều dùng để học quan hệ “đặc điểm → giá”, nên việc chia ngẫu nhiên 80/20 là hợp lý: 43.136 viên để học, 10.784 viên để kiểm tra trên những viên mô hình chưa từng thấy.</p>
+      <p>Biến cần đoán là giá bán (USD). Khi huấn luyện, mô hình học trên log của giá — lý do sẽ rõ ở phần tiền xử lý — và kết quả cuối cùng được quy ngược về USD để đọc cho dễ.</p>
+    </div>
+  </details>
+</section>
+
+<!-- 2 -->
+<section id="du-lieu">
+  <div class="num">Phần 2</div>
+  <h2>Dữ liệu lấy từ đâu?</h2>
+  <p>Bộ dữ liệu <strong>Diamonds</strong> trên Kaggle (tác giả đăng tải: shivam2503), file <code>diamonds.csv</code> gồm 53.940 dòng và 11 cột — mỗi dòng là một viên kim cương với carat, cách cắt (cut), màu (color), độ trong (clarity), chiều sâu (depth), tỉ lệ mặt bàn (table), giá bán và ba kích thước x, y, z.</p>
+  <p><a href="https://www.kaggle.com/datasets/shivam2503/diamonds" target="_blank" rel="noopener">Xem bộ dữ liệu trên Kaggle: kaggle.com/datasets/shivam2503/diamonds</a></p>
+  <p>Giá bán dao động từ 326 USD tới 18.823 USD, với mức trung vị là 2.401 USD và trung bình 3.933 USD. Carat trung bình là 0,798, trung vị 0,70 — đa số là đá nhỏ, dưới 1 carat.</p>
+  <details>
+    <summary>Mở rộng: có cột nào “ăn gian” không?</summary>
+    <div class="body">
+      <p>Không. Đây là điểm quan trọng cần kiểm tra trước khi tin bất kỳ kết quả nào: không có cột nào trong file được tính ra từ giá bán, nên mô hình không thể chép đáp án. Thể tích (volume) được tính từ ba kích thước x, y, z — hoàn toàn là thông tin của chính viên đá, không đụng tới giá.</p>
+      <p>Có một cột bẫy cần bỏ: <code>Unnamed: 0</code> chỉ là số thứ tự dòng, nhưng nó tương quan tới −0,31 với giá chỉ vì file được sắp xếp theo thứ tự nào đó. Đưa nó vào làm đặc trưng thì mô hình sẽ học thứ tự dòng thay vì học giá trị viên đá — nên đã bỏ ngay từ đầu.</p>
+    </div>
+  </details>
+</section>
+
+<!-- 3 -->
+<section id="eda">
+  <div class="num">Phần 3</div>
+  <h2>Khám phá dữ liệu: nhìn hình trước, kết luận sau</h2>
+  <p>Trước khi dạy mô hình bất cứ điều gì, ta nhìn dữ liệu trước. Bốn biểu đồ dưới đây kể gần như toàn bộ câu chuyện của bộ dữ liệu này. Bấm qua từng biểu đồ để xem.</p>
+
+  <div class="tabs" role="tablist" aria-label="Chọn biểu đồ khám phá dữ liệu">
+    <button role="tab" aria-selected="true" data-chart="corr">Cái gì kéo giá lên?</button>
+    <button role="tab" aria-selected="false" data-chart="dist">Giá phân bố ra sao?</button>
+    <button role="tab" aria-selected="false" data-chart="cat">Nhìn hạng mục thì sao?</button>
+    <button role="tab" aria-selected="false" data-chart="outlier">Dữ liệu “gai góc” ở đâu?</button>
+  </div>
+
+  <div class="chartbox">
+    <div id="chartTitle" style="font-weight:700;margin-bottom:4px"></div>
+    <div id="chartHost"></div>
+    <div class="takeaway" id="chartNote"></div>
+  </div>
+
+  <details>
+    <summary>Mở rộng: ba phát hiện định hình toàn bộ phần xử lý phía sau</summary>
+    <div class="body">
+      <p><strong>Một, dữ liệu gần như sạch hoàn toàn.</strong> Toàn bộ file có 0 ô trống, 0 dòng trùng. Chỉ có 20 dòng ghi kích thước x, y hoặc z bằng 0 — một viên đá không thể có chiều bằng 0, đó là lỗi ghi — nên bỏ đi là xong. Đây là bộ dễ xử lý nhất trong 4 bộ đã chạy.</p>
+      <p><strong>Hai, kích thước và thể tích gần như là một.</strong> Thể tích tương quan với carat tới 0,976 — hai cột này mang gần như cùng một thông tin. Hệ quả: mô hình sẽ khó phân biệt “giá tăng vì nặng hơn” hay “giá tăng vì to hơn”, và bảng xếp hạng độ quan trọng của đặc trưng phải đọc rất cẩn thận (xem Phần 7).</p>
+      <p><strong>Ba, giá trung bình theo hạng mục rất dễ đánh lừa.</strong> Nhìn thô thì đá cắt Premium ($4.584) đắt hơn Ideal ($3.458), đá màu J ($5.324) đắt hơn màu D ($3.170), đá độ trong SI2 ($5.063) đắt hơn IF ($2.865) — toàn ngược với trực giác. Nguyên nhân: đá to thường có màu thấp và độ trong thấp, nên giá trung bình thô bị carat nhiễu. Đây là lý do các hạng mục không được mã hóa theo thứ tự, và phải để mô hình tự tách tác động có điều kiện.</p>
+    </div>
+  </details>
+</section>
+
+<!-- 4 -->
+<section id="pipeline">
+  <div class="num">Phần 4</div>
+  <h2>Tiền xử lý: 8 bước, mỗi bước đều có lý do</h2>
+  <p>Dữ liệu gốc gần như sạch, nên phần này ngắn hơn hẳn các bộ nhà. Nhưng ngắn không có nghĩa là làm cho có — hai bước quyết định nhất là lấy log và cách mã hóa hạng mục.</p>
+
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><div>
+      <h3>Bỏ số thứ tự dòng và 20 dòng lỗi kích thước</h3>
+      <p class="why"><b>Vì sao:</b> cột <code>Unnamed: 0</code> chỉ là số thứ tự, nhưng tương quan −0,31 với giá vì thứ tự sắp xếp trong file — giữ lại là dạy mô hình học thứ tự dòng. 20 dòng có x, y hoặc z bằng 0 là dữ liệu lỗi không thể có thật, bỏ đi không tiếc.</p>
+    </div></div>
+    <div class="step"><div class="step-n">2</div><div>
+      <h3>Lấy log của giá</h3>
+      <p class="why"><b>Vì sao:</b> giá lệch phải (skew 1,62, viên đắt nhất gấp gần 8 lần viên trung vị). Lấy log kéo đuôi phải về (skew còn 0,12), giúp mô hình không bị vài viên siêu đắt chi phối, và sai số được tính theo tỉ lệ phần trăm thay vì số tiền tuyệt đối. Kết quả cuối vẫn quy về USD.</p>
+    </div></div>
+    <div class="step"><div class="step-n">3</div><div>
+      <h3>Lấy log carat và tạo thể tích log</h3>
+      <p class="why"><b>Vì sao:</b> carat cũng lệch phải (skew 1,12 → còn 0,10 sau log). Thể tích là x × y × z, lấy log cho cùng thang. Ở thang log, quan hệ kích thước – giá gần như một đường thẳng: tăng gấp đôi carat thì giá tăng theo một tỉ lệ khá đều. Thể tích chỉ tính từ kích thước, không đụng giá nên không rò rỉ.</p>
+    </div></div>
+    <div class="step"><div class="step-n">4</div><div>
+      <h3>Chặn giá trị cực đoan ở mức 1% và 99%</h3>
+      <p class="why"><b>Vì sao:</b> có viên ghi dài y tới 58,9 mm và cao z tới 31,8 mm — một viên kim cương thật không thể dài như vậy, đó là lỗi ghi. Chặn (winsorise) giữ lại dòng dữ liệu nhưng giới hạn giá trị ở ngưỡng hợp lý, để một vài điểm lỗi không kéo lệch cả mô hình.</p>
+    </div></div>
+    <div class="step"><div class="step-n">5</div><div>
+      <h3>Điền giá trị thiếu bằng trung vị / giá trị thường gặp nhất</h3>
+      <p class="why"><b>Vì sao:</b> bộ này thực ra không thiếu ô nào, nhưng bước này vẫn để sẵn trong chuỗi xử lý cho an toàn — nếu dữ liệu mới có ô trống, hệ thống không sập. Trung vị được chọn vì nó không bị giá trị cực đoan kéo lệch như trung bình.</p>
+    </div></div>
+    <div class="step"><div class="step-n">6</div><div>
+      <h3>Mã hóa cut, color, clarity thành cột nhị phân (One-Hot)</h3>
+      <p class="why"><b>Vì sao:</b> đây là bước dễ sai nhất của bài này. Nếu gán số thứ tự (Ideal = 5, Premium = 4…) thì mô hình sẽ tưởng các cấp cách đều nhau và có thứ tự tuyến tính. Nhưng giá trung bình thô đã cho thấy thứ tự đó không đơn điệu — Premium đắt hơn Ideal, màu J đắt hơn màu D — vì carat nhiễu vào. Tách thành từng cột riêng để mỗi cấp có hệ số giá của chính nó, và để mô hình tự tách tác động thật.</p>
+    </div></div>
+    <div class="step"><div class="step-n">7</div><div>
+      <h3>Chuẩn hóa thang đo — chỉ cho Ridge</h3>
+      <p class="why"><b>Vì sao:</b> Ridge phạt độ lớn của hệ số, nên mọi đặc trưng phải đứng trên cùng một thang thì mức phạt mới công bằng. Random Forest thì không cần bước này, vì cây quyết định chỉ chia dữ liệu theo ngưỡng, thang đo nào cũng như nhau.</p>
+    </div></div>
+    <div class="step"><div class="step-n">8</div><div>
+      <h3>Chia ngẫu nhiên 80/20 và khóa tập kiểm tra</h3>
+      <p class="why"><b>Vì sao:</b> 43.136 viên để học, 10.784 viên để chấm điểm. Mọi thông số xử lý — trung vị, ngưỡng chặn, hệ số chuẩn hóa — chỉ học từ phần huấn luyện. Nếu học từ toàn bộ dữ liệu, điểm kiểm tra sẽ đẹp giả tạo.</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section id="mo-hinh">
+  <div class="num">Phần 5</div>
+  <h2>Hai mô hình, hai triết lý trái ngược</h2>
+  <div class="cards">
+    <div class="card ridge">
+      <h3>Ridge — đường thẳng có kỷ luật</h3>
+      <p>Ridge là hồi quy tuyến tính cộng thêm một “mức phạt”: hệ số nào phình quá to sẽ bị kéo nhỏ lại. Nhờ vậy, khi nhiều cột mang thông tin gần giống nhau — như carat và thể tích ở bộ này — mô hình vẫn ổn định thay vì dao động loạn.</p>
+      <ul>
+        <li><strong>Áp vào bài này:</strong> học trên log giá, với mức phạt α = 1,0 được chọn bằng kiểm chứng chéo 5 phần.</li>
+        <li><strong>Điểm mạnh:</strong> đọc được trực tiếp — mỗi cấp clarity hay color cộng hay trừ bao nhiêu vào giá đều nhìn thấy rõ.</li>
+        <li><strong>Điểm yếu:</strong> chỉ vẽ được quan hệ thẳng; tương tác giữa các 4C thì nó chịu.</li>
+      </ul>
+    </div>
+    <div class="card rf">
+      <h3>Random Forest — hỏi ý kiến 300 cái cây</h3>
+      <p>Random Forest trồng 300 cây quyết định, mỗi cây nhìn dữ liệu theo một cách hơi khác nhau, rồi lấy trung bình dự đoán của cả rừng. Một cây dễ sai, nhưng cả rừng bỏ phiếu chung thì ổn định hơn nhiều.</p>
+      <ul>
+        <li><strong>Áp vào bài này:</strong> 300 cây, mỗi lá chứa tối thiểu 2 viên đá, học trên cùng dữ liệu đã xử lý (trừ bước chuẩn hóa).</li>
+        <li><strong>Điểm mạnh:</strong> tự bắt được quan hệ cong và tương tác — ví dụ cùng carat nhưng khác độ trong thì giá khác hẳn.</li>
+        <li><strong>Điểm yếu:</strong> không giải thích được từng hệ số, và không đoán ra ngoài khoảng giá đã từng thấy.</li>
+      </ul>
+    </div>
+  </div>
+  <details>
+    <summary>Mở rộng: khác biệt cốt lõi nằm ở đâu?</summary>
+    <div class="body">
+      <p>Ridge đánh cược rằng quan hệ trong dữ liệu là thẳng — và sau khi lấy log, cược đó gần đúng tới mức đáng sợ: tương quan giữa log carat và log giá là 0,966. Random Forest không cược gì cả: nó để dữ liệu tự nói, đổi lại bằng khả năng giải thích kém hơn và nguy cơ học thuộc tập huấn luyện.</p>
+      <p>Ở bài này, hai cách tiếp cận cho kết quả sát nhau (R² trên log giá: 0,983 so với 0,988) chính là bằng chứng cho thấy tín hiệu đã mạnh tới mức cách tiếp cận nào cũng tới đích — phần chênh lệch còn lại chủ yếu là Random Forest bắt thêm được vài tương tác nhỏ giữa các 4C.</p>
+    </div>
+  </details>
+</section>
+
+<!-- 6 -->
+<section id="kiem-tra">
+  <div class="num">Phần 6</div>
+  <h2>Kiểm tra mô hình: học thật, học chưa tới, hay học vẹt?</h2>
+  <p>Điểm cao trên dữ liệu đã học chưa nói lên điều gì. Câu hỏi quan trọng hơn là: gặp một viên kim cương hoàn toàn mới, mô hình còn đoán trúng không? Ba khái niệm dưới đây là cách người ta kiểm tra chuyện đó — nghe có vẻ sách vở, nhưng bản chất rất giống chuyện học thi.</p>
+
+  <div class="fit3">
+    <div class="card underfit">
+      <h3>Underfitting — học chưa tới</h3>
+      <p>Mô hình quá đơn giản, chưa nắm được quy luật nên đoán dở <em>cả</em> trên dữ liệu đã học lẫn dữ liệu mới.</p>
+      <p><strong>Giống như:</strong> mới đọc lướt qua loa đã đi thi — đề cũ hay đề mới đều làm không được.</p>
+      <p><strong>Dấu hiệu:</strong> điểm lúc học thấp, điểm lúc kiểm tra cũng thấp, hai điểm sát nhau nhưng đều tệ.</p>
+    </div>
+    <div class="card goodfit">
+      <h3>Vừa khớp — học hiểu thật</h3>
+      <p>Mô hình nắm được quy luật chung — kích thước, màu, độ trong ảnh hưởng tới giá ra sao — nên áp sang viên mới vẫn đúng.</p>
+      <p><strong>Giống như:</strong> hiểu bản chất bài toán, gặp dạng đề lạ vẫn biết cách làm.</p>
+      <p><strong>Dấu hiệu:</strong> điểm lúc học và lúc kiểm tra đều khá, và chênh nhau rất ít.</p>
+    </div>
+    <div class="card badfit">
+      <h3>Overfitting — học vẹt</h3>
+      <p>Mô hình nhớ thuộc lòng cả những chi tiết ngẫu nhiên của dữ liệu đã học — kể cả nhiễu — thay vì học quy luật. Điểm lúc học rất cao, nhưng gặp dữ liệu mới thì tụt hẳn.</p>
+      <p><strong>Giống như:</strong> thuộc lòng từng đáp án trong đề ôn, đổi số liệu một chút là tịt.</p>
+      <p><strong>Dấu hiệu:</strong> điểm lúc học cao vọt, điểm lúc kiểm tra thấp hơn nhiều — khoảng cách giữa hai điểm càng lớn, học vẹt càng nặng.</p>
+    </div>
+  </div>
+
+  <details>
+    <summary>Mở rộng: cách kiểm tra cụ thể là gì?</summary>
+    <div class="body">
+      <p><strong>Một, so điểm học và điểm kiểm tra.</strong> Mô hình được chấm hai lần: một lần trên 43.136 viên đã dùng để học (điểm train), một lần trên 10.784 viên bị khóa lại từ đầu, chưa từng thấy (điểm test). Lấy điểm train trừ điểm test ra “khoảng hở”. Khoảng hở gần 0 là khỏe; khoảng hở lớn là dấu hiệu học vẹt.</p>
+      <p><strong>Hai, kiểm chứng chéo 5 phần (cross-validation).</strong> Thay vì chia dữ liệu một lần, ta chia làm 5 phần, lần lượt lấy từng phần làm bài kiểm tra và học trên 4 phần còn lại, rồi lấy trung bình. Nếu cả 5 lần đều cho điểm gần bằng nhau và gần với điểm test, kết quả không phải do may mắn ở một lần chia. Độ dao động nhỏ — ở bài này chỉ ±0,0002 đến ±0,0003, gần như bằng 0 — là dấu hiệu mô hình cực kỳ ổn định.</p>
+      <p><strong>Ba, đừng nhầm học vẹt với rò rỉ dữ liệu.</strong> Học vẹt là nhớ nhiễu trong phần đã học. Rò rỉ là được xem trước đáp án — ví dụ một cột được tính ra từ chính giá bán. Bài này đã kiểm tra ở Phần 2: không có cột rò rỉ nào, nên điểm test ở đây là điểm thật — dù cao tới mức nhìn qua ai cũng nghi ngờ.</p>
+      <p>Nói theo ngôn ngữ thống kê: underfitting là <em>lệch</em> nhiều (bias cao — mô hình đơn giản quá nên sai có hệ thống), overfitting là <em>dao động</em> nhiều (variance cao — mô hình nhạy quá, dữ liệu đổi một chút là kết quả đổi hẳn). Mô hình tốt nằm ở giữa hai cực đó.</p>
+    </div>
+  </details>
+
+  <h3 style="margin-top:20px">Áp vào hai mô hình ở bài này: điểm học so với điểm kiểm tra</h3>
+  <p>Số dưới đây là R² trên thang log giá — thang mô hình thực sự học. Thanh dài là điểm cao.</p>
+
+  <div class="tt-group">
+    <h3>Ridge — chênh lệch gần như bằng 0</h3>
+    <div class="tt-row"><span class="tt-lab">Lúc học (train)</span><div class="bar-track"><div class="bar-fill" style="background:var(--ridge);width:98.3%"></div></div><b>0,983</b></div>
+    <div class="tt-row"><span class="tt-lab">Kiểm tra (test)</span><div class="bar-track"><div class="bar-fill" style="background:var(--ridge);width:98.3%;opacity:.55"></div></div><b>0,983</b></div>
+    <p style="font-size:15px;margin-top:6px">Khoảng hở: <span class="gap-ok">−0,001</span> — điểm kiểm tra còn cao hơn điểm học một chút, tức không có dấu vết học vẹt nào.</p>
+  </div>
+
+  <div class="tt-group">
+    <h3>Random Forest — có khoảng hở, nhưng rất nhỏ</h3>
+    <div class="tt-row"><span class="tt-lab">Lúc học (train)</span><div class="bar-track"><div class="bar-fill" style="background:var(--rf);width:99.6%"></div></div><b>0,996</b></div>
+    <div class="tt-row"><span class="tt-lab">Kiểm tra (test)</span><div class="bar-track"><div class="bar-fill" style="background:var(--rf);width:98.8%;opacity:.55"></div></div><b>0,988</b></div>
+    <p style="font-size:15px;margin-top:6px">Khoảng hở: <span class="gap-ok">0,008</span> — có hụt nhẹ khi gặp đá mới, nhưng điểm kiểm tra vẫn rất cao và ổn định.</p>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Mô hình</th><th>R² lúc học</th><th>R² kiểm tra</th><th>Khoảng hở</th><th>Kiểm chứng 5-fold</th><th>Kết luận</th></tr></thead>
+      <tbody>
+        <tr><th>Đoán bằng giá trung bình</th><td data-l="R² lúc học">≈ 0</td><td data-l="R² kiểm tra">−0,000</td><td data-l="Khoảng hở">≈ 0</td><td data-l="Kiểm chứng 5-fold">—</td><td data-l="Kết luận">Học chưa tới (underfitting)</td></tr>
+        <tr><th>Ridge (α = 1,0)</th><td data-l="R² lúc học">0,983</td><td data-l="R² kiểm tra">0,983</td><td data-l="Khoảng hở">−0,001</td><td data-l="Kiểm chứng 5-fold">0,983 ± 0,000</td><td data-l="Kết luận" class="win">Vừa khớp — không học vẹt, không học thiếu</td></tr>
+        <tr><th>Random Forest</th><td data-l="R² lúc học">0,996</td><td data-l="R² kiểm tra">0,988</td><td data-l="Khoảng hở">0,008</td><td data-l="Kiểm chứng 5-fold">0,988 ± 0,000</td><td data-l="Kết luận" class="win">Học thuộc rất nhẹ, đã được kiềm chế</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cards">
+    <div class="card ridge">
+      <h3>Vì sao Ridge không học vẹt — và cũng không học thiếu?</h3>
+      <ul>
+        <li><strong>Không học vẹt</strong> vì Ridge vốn “cứng”: nó chỉ được vẽ một quan hệ thẳng, lại bị mức phạt α = 1,0 kéo các hệ số nhỏ lại. Một mô hình bị ghìm như vậy không đủ linh hoạt để ghi nhớ từng chi tiết ngẫu nhiên của 43.136 viên đá. Bằng chứng là điểm học và điểm kiểm tra gần như bằng nhau (0,983 so với 0,983).</li>
+        <li><strong>Không học thiếu</strong> vì đường thẳng ở đây là đủ: sau khi lấy log, quan hệ kích thước – giá đã gần như thẳng tắp, và mô hình được cấp đủ đặc trưng — log carat, log thể tích, 3 hạng mục 4C. Điểm kiểm tra 0,983 so với mức ≈ 0 của cách đoán trung bình cho thấy nó đã học được gần hết quy luật có trong dữ liệu.</li>
+      </ul>
+    </div>
+    <div class="card rf">
+      <h3>Vì sao Random Forest chỉ học thuộc rất nhẹ, chưa thành học vẹt?</h3>
+      <ul>
+        <li><strong>Nó có sẵn nguy cơ học vẹt:</strong> cây quyết định sâu có thể chia nhỏ dữ liệu tới mức ghi nhớ từng nhóm đá riêng lẻ, nên điểm lúc học lên tới 0,996 — cao hơn điểm kiểm tra 0,008.</li>
+        <li><strong>Cái kiềm nó lại là cơ chế “cả rừng”:</strong> mỗi cây chỉ học trên một mẫu con rút ngẫu nhiên và chỉ được xem một phần đặc trưng, rồi 300 cây lấy trung bình kết quả. Chi tiết ngẫu nhiên mà một cây nhớ được sẽ bị 299 cây còn lại pha loãng. Thêm nữa, mỗi lá phải chứa tối thiểu 2 viên đá nên cây không được chia tới từng viên riêng lẻ.</li>
+        <li><strong>Bằng chứng nó vẫn “hiểu bài”:</strong> kiểm chứng chéo 5 phần cho 0,988 ± 0,000 — gần như trùng điểm kiểm tra 0,988 và dao động gần như bằng 0. Nếu rừng chỉ học vẹt, điểm khi đổi phần dữ liệu kiểm tra đã sụp mạnh và nhảy loạn giữa các lần chia.</li>
+      </ul>
+    </div>
+  </div>
+
+  <details>
+    <summary>Mở rộng: nếu mô hình bị học vẹt thì chữa thế nào?</summary>
+    <div class="body">
+      <p>Nguyên tắc chung là làm mô hình “bớt tự do” lại hoặc cho nó thêm dữ liệu. Với Ridge: tăng α để phạt hệ số mạnh hơn. Với Random Forest: giảm độ sâu của cây, tăng số viên tối thiểu trong mỗi lá, hoặc tăng số cây để trung bình mượt hơn.</p>
+      <p>Ở bài này chưa cần chữa gì thêm: Ridge đã cân bằng sẵn, còn khoảng hở 0,008 của Random Forest là cái giá quá nhỏ để đổi lấy điểm kiểm tra cao nhất (0,988) — nó chỉ trở thành vấn đề nếu khoảng hở phình to trong khi điểm kiểm tra tụt xuống.</p>
+    </div>
+  </details>
+</section>
+
+<!-- 7 -->
+<section id="ket-qua">
+  <div class="num">Phần 7</div>
+  <h2>Kết quả: cả hai đều gần như hoàn hảo — trên cả hai thang đo</h2>
+  <p>R² cho biết mô hình giải thích được bao nhiêu phần biến động của giá: 1,0 là hoàn hảo, 0 là ngang với việc đoán bừa bằng giá trung bình. Vì mô hình học trên log giá, báo cáo trình bày cả hai thang — chấm trên log giá và chấm lại sau khi quy về USD. Bấm để chuyển thang:</p>
+
+  <div class="toggle" role="group" aria-label="Chọn thang đo R²">
+    <button id="btnLog" aria-pressed="true">Thang log giá</button>
+    <button id="btnRaw" aria-pressed="false">Thang giá thật (USD)</button>
+  </div>
+  <div id="r2bars" aria-live="polite"></div>
+  <p><small id="r2note"></small></p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Mô hình</th><th>R² (log)</th><th>R² (USD)</th><th>Sai số TB (USD)</th><th>Sai số % trung vị</th><th>Kiểm chứng 5-fold</th></tr></thead>
+      <tbody>
+        <tr><th>Đoán bằng giá trung bình</th><td data-l="R² (log)">−0,000</td><td data-l="R² (USD)">−0,149</td><td data-l="Sai số TB (USD)">2.817</td><td data-l="Sai số % trung vị">70,42%</td><td data-l="Kiểm chứng 5-fold">—</td></tr>
+        <tr><th>Ridge (α = 1,0)</th><td data-l="R² (log)">0,983</td><td data-l="R² (USD)">0,967</td><td data-l="Sai số TB (USD)">390</td><td data-l="Sai số % trung vị">8,27%</td><td data-l="Kiểm chứng 5-fold">0,983 ± 0,000</td></tr>
+        <tr><th>Random Forest</th><td data-l="R² (log)" class="win">0,988</td><td data-l="R² (USD)" class="win">0,981</td><td data-l="Sai số TB (USD)" class="win">277</td><td data-l="Sai số % trung vị" class="win">5,78%</td><td data-l="Kiểm chứng 5-fold" class="win">0,988 ± 0,000</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Đặt cạnh cách đoán ngây thơ nhất — lấy giá trung bình cho mọi viên — cả hai mô hình đều bỏ xa: sai số trung vị giảm từ hơn 70% xuống còn khoảng 6–8%. Nghĩa là với một viên kim cương điển hình, mô hình đoán lệch chưa tới một phần mười giá thật — và với Random Forest thì chỉ khoảng 1 viên trong 2 lệch dưới 5,8%.</p>
+
+  <details>
+    <summary>Mở rộng: mô hình nào “nhìn” vào đâu khi đoán?</summary>
+    <div class="body">
+      <p><strong>Random Forest coi thể tích là tín hiệu mạnh nhất</strong> — xáo thể tích đi, R² giảm tới 1,618. Nhưng con số này phải đọc cẩn thận: thể tích tương quan 0,976 với carat, tức hai cột mang gần như cùng một thông tin. Xáo thể tích là phá cả thông tin carat đi cùng, nên carat nhìn qua chỉ còn 0,087 — không có nghĩa carat kém quan trọng, mà là thể tích đã “gánh thay” phần việc của carat. Đây là trường hợp điển hình mà bảng xếp hạng độ quan trọng nói dối nếu đọc vội.</p>
+      <p><strong>Ridge thì kể câu chuyện bằng hệ số cụ thể:</strong> log carat +0,873 là hệ số lớn nhất — tăng 10% carat thì giá tăng khoảng 8,7%. Độ trong IF cộng +0,405 còn I1 trừ −0,68; màu D cộng +0,206 còn màu J trừ −0,30. Hai biến depth (+0,004) và table (+0,003) gần như bằng 0 — tỉ lệ cắt gần như không ảnh hưởng giá khi đã biết 4C và kích thước.</p>
+      <p><strong>Một ví dụ thật trong tập kiểm tra:</strong> viên kim cương bán 2.423 USD — Ridge đoán 2.495 USD (lệch +3,0%), Random Forest đoán 2.317 USD (lệch −4,4%). Cả hai đều sát, dù đá này nằm đúng khoảng giá đông đúc nhất.</p>
+      <p><strong>Phần dư theo nhóm giá:</strong> độ lệch chuẩn phần dư của Random Forest lớn nhất ở nhóm đá rẻ nhất (0,130–0,145) và nhỏ nhất ở nhóm giữa (0,084–0,097) — đá rẻ khó đoán hơn đá đắt, ngược với bài nhà, vì đá nhỏ có giá trị tuyệt đối thấp nên một sai lệch nhỏ về carat cũng đổi giá theo tỉ lệ lớn.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Mở rộng: có nên tin con số này không?</summary>
+    <div class="body">
+      <p>Có cơ sở để tin — với điều kiện hiểu đúng nó là gì. Kiểm chứng chéo 5 phần cho kết quả gần như trùng với điểm trên tập kiểm tra và dao động gần như bằng 0, nên đây không phải may mắn của một lần chia dữ liệu. Phần dư trung bình gần 0 ở mọi nhóm giá, không có nhóm nào bị đoán lệch có hệ thống.</p>
+      <p>Nhưng phải nói thẳng điểm chưa đẹp: R² ~0,99 không chứng minh mô hình giỏi — nó chứng minh dữ liệu quá dễ. Giá kim cương gần như là một công thức theo carat, nên bất kỳ mô hình tử tế nào cũng đạt mức này. Người chấm khó tính hoàn toàn có quyền hỏi “vậy mô hình của bạn hơn công thức tra bảng ở chỗ nào?” — và câu trả lời trung thực là: hơn ở chỗ nó tự học được cả tác động của màu, độ trong và cách cắt mà không cần bảng tra sẵn, với sai số trung vị chỉ 5,8%.</p>
+    </div>
+  </details>
+</section>
+
+<!-- 8 -->
+<section id="ket-luan">
+  <div class="num">Phần 8</div>
+  <h2>Kết luận và ý nghĩa thực tế</h2>
+  <p>Giá kim cương chạy theo một thứ duy nhất, theo đúng thứ tự này: <strong>kích thước</strong>. Carat (hay thể tích, gần như cùng một thứ) quyết định gần như toàn bộ giá — tương quan 0,966 với log giá. Màu và độ trong chỉ điều chỉnh thêm: cùng một carat, đá không màu D và độ trong IF đắt hơn đá màu J, độ trong I1 tới hàng chục phần trăm. Tỉ lệ cắt (depth, table) gần như không còn ảnh hưởng khi đã biết 4C.</p>
+  <p>Về mô hình: Random Forest thắng nhẹ về độ chính xác, Ridge thắng về khả năng giải thích. Nếu cần một con số đáng tin để ra quyết định, chọn Random Forest; nếu cần giải thích <em>vì sao</em> viên đá có giá đó — cho khách hàng, cho báo cáo — Ridge dễ trình bày hơn nhiều, vì mỗi hệ số là một con số tiền cụ thể.</p>
+  <details>
+    <summary>Mở rộng: những hạn chế phải thừa nhận</summary>
+    <div class="body">
+      <p>Thứ nhất, bộ này không có vị trí và không có thời gian, nên không kể được câu chuyện thị trường như các bộ nhà — đây là định giá hàng xa xỉ theo 4C, không phải một bài toán kinh tế thị trường. Thứ hai, không tách được tác động riêng của carat và thể tích vì hai cột tương quan tới 0,976. Thứ ba, Random Forest không ngoại suy được: gặp một viên đá đắt hơn mọi viên từng thấy, nó sẽ đoán thấp hơn giá thật. Và cuối cùng, R² ~0,99 là trần của bài này — đổi tiền xử lý hay mô hình khác cũng khó cải thiện thêm bao nhiêu, vì tín hiệu đã gần như cạn.</p>
+      <p>Đặt trong cả 4 bộ đã chạy, Diamonds đóng vai trò “mốc trên”: cùng một cặp mô hình, R² chạy từ 0,79 (Melbourne, tín hiệu yếu và nhiễu) tới 0,99 (kim cương, tín hiệu gần như công thức). Bài học rút ra là chất lượng mô hình phụ thuộc vào tín hiệu trong dữ liệu, không phải vào thuật toán.</p>
+    </div>
+  </details>
+</section>
+
+<footer>
+  <p>Nguồn dữ liệu: “Diamonds” — Kaggle, shivam2503/diamonds. Toàn bộ số liệu trong báo cáo lấy từ một lần chạy phân tích duy nhất: chia ngẫu nhiên 80/20 (mã hạt giống 42), kiểm chứng chéo 5 phần, đánh giá trên 10.784 viên kim cương kiểm tra.</p>
+</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var INK="#111111", RIDGE="#1d4ed8", RF="#047857", WARN="#b45309", GRID="#e2e2e2", MUT="#555";
+
+  function svgEl(tag, attrs){
+    var el=document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for(var k in attrs) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+  function hbars(host, data, opts){
+    var W=760, rowH=34, top=8, labelW=196, valW=86;
+    var H=top + data.length*rowH + 6;
+    var max=opts.max;
+    var svg=svgEl("svg",{viewBox:"0 0 "+W+" "+H, role:"img", "aria-label":opts.title});
+    data.forEach(function(d,i){
+      var y=top+i*rowH;
+      var t=svgEl("text",{x:labelW-10,y:y+rowH/2+5,"text-anchor":"end","font-size":"14.5",fill:INK});
+      t.textContent=d.label; svg.appendChild(t);
+      var bw=(W-labelW-valW)*(d.value/max);
+      if(bw<0) bw=0;
+      svg.appendChild(svgEl("rect",{x:labelW,y:y+5,width:bw,height:rowH-12,rx:5,fill:d.color||RIDGE}));
+      var v=svgEl("text",{x:labelW+bw+8,y:y+rowH/2+5,"font-size":"14.5","font-weight":"700",fill:INK});
+      v.textContent=d.fmt; svg.appendChild(v);
+    });
+    host.innerHTML=""; host.appendChild(svg);
+  }
+  function vbars(host, data, opts){
+    var W=760,H=300,base=248,left=56,right=16,top=26;
+    var svg=svgEl("svg",{viewBox:"0 0 "+W+" "+H, role:"img","aria-label":opts.title});
+    opts.ticks.forEach(function(tk){
+      var y=base-(base-top)*(tk[0]/opts.max);
+      svg.appendChild(svgEl("line",{x1:left,x2:W-right,y1:y,y2:y,stroke:GRID,"stroke-width":1}));
+      var t=svgEl("text",{x:left-8,y:y+4,"text-anchor":"end","font-size":"12.5",fill:MUT});
+      t.textContent=tk[1]; svg.appendChild(t);
+    });
+    var slot=(W-left-right)/data.length, bw=Math.min(110, slot*0.5);
+    data.forEach(function(d,i){
+      var cx=left+slot*i+slot/2;
+      var h=(base-top)*(d.value/opts.max); if(h<4) h=4;
+      svg.appendChild(svgEl("rect",{x:cx-bw/2,y:base-h,width:bw,height:h,rx:6,fill:d.color}));
+      var v=svgEl("text",{x:cx,y:base-h-8,"text-anchor":"middle","font-size":"14.5","font-weight":"700",fill:INK});
+      v.textContent=d.fmt; svg.appendChild(v);
+      var l=svgEl("text",{x:cx,y:base+22,"text-anchor":"middle","font-size":"13.5",fill:INK});
+      l.textContent=d.label; svg.appendChild(l);
+      if(d.sub){var s=svgEl("text",{x:cx,y:base+40,"text-anchor":"middle","font-size":"11.5",fill:MUT}); s.textContent=d.sub; svg.appendChild(s);}
+    });
+    svg.appendChild(svgEl("line",{x1:left,x2:W-right,y1:base,y2:base,stroke:INK,"stroke-width":1.5}));
+    host.innerHTML=""; host.appendChild(svg);
+  }
+
+  var charts={
+    corr:{title:"Tương quan với log giá — kích thước áp đảo tất cả",
+      draw:function(h){ hbars(h,[
+        {label:"log(carat)",value:0.966,fmt:"0,97",color:RF},
+        {label:"log(thể tích)",value:0.966,fmt:"0,97",color:RF},
+        {label:"Carat (thô)",value:0.922,fmt:"0,92"},
+        {label:"Thể tích (thô)",value:0.902,fmt:"0,90"},
+        {label:"Tỉ lệ mặt bàn",value:0.127,fmt:"0,13"},
+        {label:"Chiều sâu",value:0.011,fmt:"−0,01",color:"#888"}
+      ],{max:1.0,title:"Biểu đồ tương quan giữa các đặc trưng và log giá"});},
+      note:"<b>Đọc biểu đồ:</b> log carat và log thể tích cùng tương quan 0,97 với log giá — cao tới mức gần như quyết định giá một mình. Depth gần như bằng 0 và table chỉ 0,13: tỉ lệ cắt gần như không nói gì về giá khi đã biết kích thước."},
+    dist:{title:"Phân bố giá — trung vị 2.401 USD nhưng đuôi phải kéo rất dài",
+      draw:function(h){ vbars(h,[
+        {label:"Giá tối thiểu",value:326,fmt:"326",color:"#888"},
+        {label:"Trung vị",value:2401,fmt:"2.401",color:RIDGE,sub:"một nửa số đá rẻ hơn mức này"},
+        {label:"Trung bình",value:3933,fmt:"3.933",color:RIDGE,sub:"bị đá đắt kéo lên"},
+        {label:"Mức 99%",value:17378,fmt:"17.378",color:WARN,sub:"99% số đá rẻ hơn mức này"},
+        {label:"Giá tối đa",value:18823,fmt:"18.823",color:"#b91c1c",sub:"gấp gần 8 lần trung vị"}
+      ],{max:20000,ticks:[[0,"0"],[5000,"5 nghìn"],[10000,"10 nghìn"],[15000,"15 nghìn"],[20000,"20 nghìn"]],title:"Biểu đồ các mốc phân bố của giá kim cương"});},
+      note:"<b>Đọc biểu đồ:</b> trung bình cao hơn trung vị hơn 1.500 USD — dấu hiệu kinh điển của phân bố lệch phải: số ít viên to đắt tiền kéo mọi thống kê lên. Độ lệch (skew) của giá là 1,62; sau khi lấy log, con số này chỉ còn 0,12. Đó là lý do toàn bộ mô hình học trên log giá."},
+    cat:{title:"Giá trung bình theo hạng mục — nhìn thô thì toàn ngược trực giác",
+      draw:function(h){ hbars(h,[
+        {label:"Cut Premium",value:4584,fmt:"$4.584",color:WARN},
+        {label:"Cut Fair",value:4359,fmt:"$4.359",color:WARN},
+        {label:"Cut Ideal",value:3458,fmt:"$3.458",color:RIDGE},
+        {label:"Màu J (thấp nhất)",value:5324,fmt:"$5.324",color:"#b91c1c"},
+        {label:"Màu D (cao nhất)",value:3170,fmt:"$3.170",color:RF},
+        {label:"Clarity SI2",value:5063,fmt:"$5.063",color:"#b91c1c"},
+        {label:"Clarity IF",value:2865,fmt:"$2.865",color:RF}
+      ],{max:6000,title:"Biểu đồ giá trung bình theo hạng mục cut, color, clarity"});},
+      note:"<b>Đọc biểu đồ:</b> đừng tin con số thô này. Đá cắt Premium không thật sự đắt hơn Ideal, đá màu J không thật sự đắt hơn màu D — đá to thường có màu thấp và độ trong thấp, nên giá trung bình bị carat nhiễu. Sau khi mô hình tách tác động có điều kiện, thứ tự mới đúng: màu D cộng +0,206, màu J trừ −0,30; clarity IF cộng +0,405, I1 trừ −0,68. Đây là lý do các hạng mục được One-Hot thay vì gán số thứ tự."},
+    outlier:{title:"Dữ liệu lỗi và giá trị cực đoan — ít nhưng phải xử lý",
+      draw:function(h){ hbars(h,[
+        {label:"Giá bán (IQR)",value:6.56,fmt:"6,56%",color:WARN},
+        {label:"Carat (IQR)",value:3.50,fmt:"3,50%",color:WARN},
+        {label:"Dòng x/y/z = 0",value:0.04,fmt:"0,04%",color:"#b91c1c"}
+      ],{max:7,title:"Biểu đồ tỉ lệ outlier theo phương pháp IQR"});},
+      note:"<b>Đọc biểu đồ:</b> theo quy tắc IQR, 6,56% giá trị giá nằm ngoài vùng thông thường — đó là đuôi phải tự nhiên của đá to, không phải lỗi, nên chỉ chặn lại ở ngưỡng 1%/99% thay vì xóa. Chỉ có đúng 20 dòng (0,04%) ghi kích thước bằng 0 và vài viên ghi dài tới 58,9 mm là lỗi ghi thật — 20 dòng đó đã bỏ hẳn."}
+  };
+
+  var titleEl=document.getElementById("chartTitle"), host=document.getElementById("chartHost"), note=document.getElementById("chartNote");
+  function showChart(key){
+    var c=charts[key]; if(!c) return;
+    titleEl.textContent=c.title; c.draw(host); note.innerHTML=c.note;
+    var btns=document.querySelectorAll(".tabs button");
+    btns.forEach(function(b){ b.setAttribute("aria-selected", b.getAttribute("data-chart")===key ? "true":"false"); });
+  }
+  document.querySelectorAll(".tabs button").forEach(function(b){
+    b.addEventListener("click", function(){ showChart(b.getAttribute("data-chart")); });
+  });
+  showChart("corr");
+
+  /* R2 toggle */
+  var r2data={
+    log:{rows:[
+      {label:"Đoán bằng giá trung bình",value:0,display:"−0,000",color:"#999999"},
+      {label:"Ridge",value:0.9834,display:"0,983",color:RIDGE},
+      {label:"Random Forest",value:0.9882,display:"0,988",color:RF}],
+      note:"Thang log giá là thang mô hình thực sự học. Cả hai mô hình đều vượt xa mốc 0,80; Random Forest hơn Ridge đúng 0,005 — một khoảng rất nhỏ, vì tín hiệu đã quá mạnh."},
+    raw:{rows:[
+      {label:"Đoán bằng giá trung bình",value:0,display:"−0,149",color:"#999999"},
+      {label:"Ridge",value:0.967,display:"0,967",color:RIDGE},
+      {label:"Random Forest",value:0.9805,display:"0,981",color:RF}],
+      note:"Quy về USD, R² giảm một chút ở cả hai mô hình — chuyện bình thường, vì sai số ở nhóm đá đắt bị phóng đại khi đổi về tiền thật. Quan trọng là cả hai vẫn giữ trên 0,96."}
+  };
+  var r2host=document.getElementById("r2bars"), r2note=document.getElementById("r2note");
+  var btnLog=document.getElementById("btnLog"), btnRaw=document.getElementById("btnRaw");
+  function showR2(mode){
+    var d=r2data[mode];
+    r2host.innerHTML="";
+    d.rows.forEach(function(r){
+      var row=document.createElement("div"); row.className="bar-row";
+      var lab=document.createElement("span"); lab.textContent=r.label;
+      var track=document.createElement("div"); track.className="bar-track";
+      var fill=document.createElement("div"); fill.className="bar-fill";
+      fill.style.background=r.color; fill.style.width="0%";
+      track.appendChild(fill);
+      var val=document.createElement("b"); val.textContent=r.display;
+      row.appendChild(lab); row.appendChild(track); row.appendChild(val);
+      r2host.appendChild(row);
+      requestAnimationFrame(function(){ requestAnimationFrame(function(){ fill.style.width=(Math.max(r.value,0)*100).toFixed(1)+"%"; }); });
+    });
+    r2note.textContent=d.note;
+    btnLog.setAttribute("aria-pressed", mode==="log"?"true":"false");
+    btnRaw.setAttribute("aria-pressed", mode==="raw"?"true":"false");
+  }
+  btnLog.addEventListener("click",function(){showR2("log");});
+  btnRaw.addEventListener("click",function(){showR2("raw");});
+  showR2("log");
+})();
+</script>
+</body>
+</html>

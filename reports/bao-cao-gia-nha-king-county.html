@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="data:,">
+<title>Báo cáo giá nhà King County — Ridge & Random Forest</title>
+<style>
+  :root{
+    --bg:#ffffff; --ink:#111111; --muted:#444444; --line:#d9d9d9; --soft:#f5f5f2;
+    --ridge:#1d4ed8; --rf:#047857; --warn:#b45309; --bad:#b91c1c;
+    --radius:10px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+    font-size:16.5px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px;margin:0 auto;padding:0 20px 64px}
+  h1{font-size:32px;line-height:1.2;margin:0 0 10px;letter-spacing:-.02em}
+  h2{font-size:23px;line-height:1.3;margin:0 0 8px;letter-spacing:-.01em}
+  h3{font-size:17px;margin:0 0 6px}
+  p{margin:0 0 12px}
+  .muted{color:var(--muted)}
+  small{font-size:13.5px;color:var(--muted)}
+  a{color:var(--ridge);text-underline-offset:3px}
+  button,summary{min-height:44px}
+  /* Header */
+  header{padding:36px 0 22px;border-bottom:2px solid var(--ink)}
+  .lead{font-size:18px;color:#222;max-width:640px}
+  .verdict{margin-top:18px;border:1.5px solid var(--ink);border-radius:var(--radius);padding:16px 18px;background:var(--soft)}
+  .verdict strong{font-size:17px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}
+  .stat{border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .stat b{display:block;font-size:20px;line-height:1.2}
+  .stat span{font-size:13px;color:var(--muted)}
+  /* Nav */
+  nav{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);z-index:10;
+    display:flex;gap:4px;flex-wrap:wrap;padding:8px 0}
+  nav a{flex:0 0 auto;color:var(--ink);text-decoration:none;font-size:14.5px;font-weight:600;
+    padding:10px 12px;border-radius:8px;min-height:44px;display:flex;align-items:center}
+  nav a:hover{background:var(--soft)}
+  section{padding:30px 0 6px;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  .num{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  /* Details / expand */
+  details{border:1px solid var(--line);border-radius:var(--radius);margin:10px 0;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-weight:700;display:flex;align-items:center;gap:8px;list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:"+";margin-left:auto;font-size:20px;font-weight:400}
+  details[open ] summary::after{content:"–"}
+  details .body{padding:0 16px 14px}
+  details .body p:last-child{margin-bottom:0}
+  /* Tabs for charts */
+  .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 6px}
+  .tabs button{border:1.5px solid var(--ink);background:#fff;color:var(--ink);border-radius:999px;
+    padding:10px 16px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px}
+  .tabs button[aria-selected="true"]{background:var(--ink);color:#fff}
+  .chartbox{border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-top:8px}
+  .chartbox svg{width:100%;height:auto;display:block}
+  .takeaway{background:var(--soft);border-radius:8px;padding:12px 14px;margin-top:12px;font-size:15.5px}
+  .takeaway b{display:block;margin-bottom:2px}
+  /* Pipeline */
+  .steps{counter-reset:step;margin-top:14px}
+  .step{display:flex;gap:14px;padding:14px 0;border-top:1px solid var(--line)}
+  .step:first-child{border-top:none}
+  .step-n{flex:0 0 34px;width:34px;height:34px;border-radius:50%;background:var(--ink);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;margin-top:2px}
+  .step h3{margin-bottom:2px}
+  .step p{margin-bottom:4px;font-size:15.5px}
+  .why{font-size:15px;color:#333}
+  .why b{color:var(--ink)}
+  /* Tables */
+  .tablewrap{overflow-x:auto;margin:12px 0}
+  table{border-collapse:collapse;width:100%;font-size:15px;min-width:520px}
+  th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}
+  th:first-child,td:first-child{text-align:left}
+  thead th{border-bottom:2px solid var(--ink);font-size:14px}
+  tbody th{font-weight:700}
+  .win{font-weight:800}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
+  .card{border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+  .card.ridge{border-top:4px solid var(--ridge)}
+  .card.rf{border-top:4px solid var(--rf)}
+  .card ul{margin:6px 0 0;padding-left:18px}
+  .card li{margin-bottom:5px;font-size:15.5px}
+  .toggle{display:inline-flex;border:1.5px solid var(--ink);border-radius:999px;overflow:hidden;margin:10px 0 4px}
+  .toggle button{border:none;background:#fff;padding:10px 18px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px}
+  .toggle button[aria-pressed="true"]{background:var(--ink);color:#fff}
+  .bar-row{display:grid;grid-template-columns:150px 1fr 64px;gap:10px;align-items:center;margin:10px 0;font-size:15px}
+  .bar-track{background:#eee;border-radius:6px;height:26px;overflow:hidden}
+  .bar-fill{height:100%;border-radius:6px;transition:width .5s ease}
+  /* Fit check */
+  .fit3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:12px}
+  .fit3 .card h3{font-size:16px}
+  .fit3 .card p{font-size:15px;margin-bottom:6px}
+  .fit3 .card p:last-child{margin-bottom:0}
+  .card.badfit{border-top:4px solid var(--bad)}
+  .card.goodfit{border-top:4px solid var(--rf)}
+  .card.underfit{border-top:4px solid var(--warn)}
+  .tt-group{margin:16px 0 4px}
+  .tt-group h3{font-size:15.5px;margin-bottom:2px}
+  .tt-row{display:grid;grid-template-columns:118px 1fr 58px;gap:10px;align-items:center;margin:6px 0;font-size:14.5px}
+  .tt-row .bar-track{height:20px}
+  .tt-lab{color:var(--muted);font-size:14px}
+  .gap-ok{color:var(--rf);font-weight:700}
+  .gap-mid{color:var(--warn);font-weight:700}
+  footer{padding:26px 0 0;color:var(--muted);font-size:14px}
+  @media (max-width:640px){
+    h1{font-size:27px}
+    .stats{grid-template-columns:1fr 1fr}
+    .cards{grid-template-columns:1fr}
+    .fit3{grid-template-columns:1fr}
+    .tt-row{grid-template-columns:96px 1fr 52px;font-size:13.5px}
+    .bar-row{grid-template-columns:110px 1fr 56px;font-size:14px}
+    .tablewrap{overflow-x:visible}
+    table{min-width:0;font-size:14.5px}
+    table thead{display:none}
+    table,table tbody,table tr,table td,table th{display:block;width:100%}
+    table tr{border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-bottom:10px}
+    table td,table tbody th{border-bottom:none;padding:5px 0;text-align:left;display:flex;justify-content:space-between;gap:14px}
+    table td::before{content:attr(data-l);color:var(--muted);font-size:13.5px}
+  }
+  @media (prefers-reduced-motion:reduce){.bar-fill{transition:none} html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Một căn nhà ở King County đáng giá bao nhiêu?</h1>
+  <p class="lead">Bài toán ở đây rất đời thường: nhìn vào diện tích, chất lượng và vị trí của một căn nhà, liệu có đoán được giá bán của nó không — và đoán trúng tới đâu? Báo cáo này trả lời bằng hai mô hình, Ridge và Random Forest, trên hơn 21.000 giao dịch thật.</p>
+  <div class="verdict">
+    <strong>Kết luận ngắn gọn:</strong> cả hai mô hình đều đoán khá tốt. Random Forest nhỉnh hơn một chút, nhưng chênh lệch không lớn — vì sau khi lấy log giá, quan hệ trong dữ liệu đã gần như tuyến tính, đúng sân nhà của Ridge.
+  </div>
+  <div class="stats">
+    <div class="stat"><b>21.613</b><span>giao dịch nhà</span></div>
+    <div class="stat"><b>05/2014 – 05/2015</b><span>khoảng thời gian</span></div>
+    <div class="stat"><b>0,887</b><span>R² tốt nhất (log giá)</span></div>
+    <div class="stat"><b>8,83%</b><span>sai số trung vị tốt nhất</span></div>
+  </div>
+</header>
+
+<nav aria-label="Mục lục">
+  <a href="#bai-toan">Bài toán</a><a href="#du-lieu">Dữ liệu</a><a href="#eda">Khám phá</a>
+  <a href="#pipeline">Tiền xử lý</a><a href="#mo-hinh">Hai mô hình</a><a href="#kiem-tra">Kiểm tra học vẹt</a><a href="#ket-qua">Kết quả</a><a href="#ket-luan">Kết luận</a>
+</nav>
+
+<!-- 1 -->
+<section id="bai-toan">
+  <div class="num">Phần 1</div>
+  <h2>Bài toán chính: định giá nhà tại thời điểm bán</h2>
+  <p>Nói cho rõ ngay từ đầu: đây là bài toán <strong>định giá</strong>, không phải dự báo tương lai. Mô hình nhận vào đặc điểm của một căn nhà — diện tích, số phòng, chất lượng xây dựng, vị trí — rồi ước lượng giá bán của chính căn nhà đó tại thời điểm giao dịch.</p>
+  <p>Trong kinh tế học, cách làm này có tên là <em>hedonic pricing</em>: giá của một căn nhà được hiểu là tổng giá trị của từng đặc điểm cấu thành nó. Nhà to hơn thì đắt hơn, ở khu tốt thì đắt hơn — mô hình chỉ việc học xem mỗi đặc điểm “đáng” bao nhiêu tiền.</p>
+  <details>
+    <summary>Mở rộng: vì sao không chia dữ liệu theo thời gian?</summary>
+    <div class="body">
+      <p>Vì ta không đoán giá của ngày mai. Mọi giao dịch trong bộ dữ liệu đều dùng để học quan hệ “đặc điểm → giá”, nên việc chia ngẫu nhiên 80/20 là hợp lý: 17.290 dòng để học, 4.323 dòng để kiểm tra trên những căn nhà mô hình chưa từng thấy.</p>
+      <p>Biến cần đoán là giá bán (USD). Khi huấn luyện, mô hình học trên log của giá — lý do sẽ rõ ở phần tiền xử lý — và kết quả cuối cùng được quy ngược về USD để đọc cho dễ.</p>
+    </div>
+  </details>
+</section>
+
+<!-- 2 -->
+<section id="du-lieu">
+  <div class="num">Phần 2</div>
+  <h2>Dữ liệu lấy từ đâu?</h2>
+  <p>Bộ dữ liệu <strong>House Sales in King County, USA</strong> trên Kaggle (tác giả đăng tải: harlfoxem), file <code>kc_house_data.csv</code> gồm 21.613 dòng và 21 cột — mỗi dòng là một căn nhà đã bán ở King County, hạt bao gồm thành phố Seattle, trong giai đoạn tháng 5/2014 đến tháng 5/2015.</p>
+  <p><a href="https://www.kaggle.com/datasets/harlfoxem/housesalesprediction" target="_blank" rel="noopener">Xem bộ dữ liệu trên Kaggle: kaggle.com/datasets/harlfoxem/housesalesprediction</a></p>
+  <p>Mỗi căn nhà được mô tả bằng những thông tin quen thuộc: số phòng ngủ, phòng tắm, diện tích ở, diện tích đất, số tầng, có mặt tiền sông hay không, điểm chất lượng (grade), năm xây, mã bưu chính và tọa độ. Giá bán dao động từ 75.000 USD tới 7,7 triệu USD, với mức trung vị là 450.000 USD.</p>
+  <details>
+    <summary>Mở rộng: có cột nào “ăn gian” không?</summary>
+    <div class="body">
+      <p>Không. Đây là điểm quan trọng cần kiểm tra trước khi tin bất kỳ kết quả nào: không có cột nào trong file được tính ra từ giá bán, nên mô hình không thể chép đáp án. Hai cột dễ gây hiểu lầm là <code>sqft_living15</code> và <code>sqft_lot15</code> — đó là diện tích trung bình của 15 căn nhà gần nhất, tức thông tin về khu vực, hoàn toàn không liên quan tới giá.</p>
+    </div>
+  </details>
+</section>
+
+<!-- 3 -->
+<section id="eda">
+  <div class="num">Phần 3</div>
+  <h2>Khám phá dữ liệu: nhìn hình trước, kết luận sau</h2>
+  <p>Trước khi dạy mô hình bất cứ điều gì, ta nhìn dữ liệu trước. Bốn biểu đồ dưới đây kể gần như toàn bộ câu chuyện của bộ dữ liệu này. Bấm qua từng biểu đồ để xem.</p>
+
+  <div class="tabs" role="tablist" aria-label="Chọn biểu đồ khám phá dữ liệu">
+    <button role="tab" aria-selected="true" data-chart="corr">Cái gì kéo giá lên?</button>
+    <button role="tab" aria-selected="false" data-chart="dist">Giá phân bố ra sao?</button>
+    <button role="tab" aria-selected="false" data-chart="place">Vị trí đáng bao nhiêu?</button>
+    <button role="tab" aria-selected="false" data-chart="outlier">Dữ liệu “gai góc” ở đâu?</button>
+  </div>
+
+  <div class="chartbox">
+    <div id="chartTitle" style="font-weight:700;margin-bottom:4px"></div>
+    <div id="chartHost"></div>
+    <div class="takeaway" id="chartNote"></div>
+  </div>
+
+  <details>
+    <summary>Mở rộng: ba phát hiện định hình toàn bộ phần xử lý phía sau</summary>
+    <div class="body">
+      <p><strong>Một, dữ liệu không hề thiếu.</strong> Toàn bộ file có 0 ô trống — hiếm gặp và rất dễ chịu. Chỉ có một điểm cần để ý: 177 mã nhà xuất hiện hai lần, vì cùng một căn nhà được bán hai lần trong năm đó. Mã định danh này bị bỏ đi nên không ảnh hưởng gì.</p>
+      <p><strong>Hai, các cột diện tích gần như trùng thông tin nhau.</strong> Diện tích ở và diện tích tầng trên tương quan tới 0,88; điểm chất lượng cũng đi cùng diện tích ở ở mức 0,76. Đây gọi là đa cộng tuyến — và nó là lý do Ridge, mô hình sinh ra để xử lý đúng vấn đề này, được chọn.</p>
+      <p><strong>Ba, có vài dòng rất lạ.</strong> Một căn nhà ghi tới 33 phòng ngủ, 13 căn ghi 0 phòng ngủ. Những dòng này không bị xóa vội — chúng được xử lý chung trong bước chặn giá trị cực đoan ở phần tiền xử lý.</p>
+    </div>
+  </details>
+</section>
+
+<!-- 4 -->
+<section id="pipeline">
+  <div class="num">Phần 4</div>
+  <h2>Tiền xử lý: 9 bước, mỗi bước đều có lý do</h2>
+  <p>Dữ liệu gốc chưa dùng ngay được. Chuỗi xử lý dưới đây biến nó thành dạng mô hình học tốt nhất — và mọi thông số của chuỗi này chỉ được học từ tập huấn luyện, để tập kiểm tra thực sự là “chưa từng thấy”.</p>
+
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><div>
+      <h3>Bỏ mã định danh và ngày bán</h3>
+      <p class="why"><b>Vì sao:</b> mã nhà chỉ là nhãn, không nói gì về giá trị căn nhà. Ngày bán cũng không dùng, vì đây là bài toán định giá tại thời điểm giao dịch chứ không phải dự báo theo thời gian.</p>
+    </div></div>
+    <div class="step"><div class="step-n">2</div><div>
+      <h3>Lấy log của giá</h3>
+      <p class="why"><b>Vì sao:</b> giá lệch phải rất mạnh — căn đắt nhất gấp 17 lần căn trung vị. Lấy log kéo cái đuôi dài đó về, giúp mô hình không bị vài căn siêu đắt chi phối, và sai số được tính theo tỉ lệ phần trăm thay vì số tiền tuyệt đối. Kết quả cuối vẫn quy về USD.</p>
+    </div></div>
+    <div class="step"><div class="step-n">3</div><div>
+      <h3>Lấy log các cột diện tích</h3>
+      <p class="why"><b>Vì sao:</b> diện tích cũng lệch phải giống giá. Ở thang log, quan hệ diện tích – giá gần tuyến tính hơn hẳn: tăng gấp đôi diện tích thì giá tăng theo một tỉ lệ khá đều, thay vì tăng vọt ở những căn rất lớn.</p>
+    </div></div>
+    <div class="step"><div class="step-n">4</div><div>
+      <h3>Tạo thêm 5 đặc trưng mới</h3>
+      <p>Tuổi nhà (2015 trừ năm xây), nhà đã từng sửa chưa, số năm kể từ lần sửa gần nhất, tổng số phòng, và diện tích trung bình mỗi phòng.</p>
+      <p class="why"><b>Vì sao:</b> “tuổi nhà” dễ hiểu và dễ học hơn “năm xây” thô. Các đặc trưng này đều suy ra từ thông tin có sẵn của chính căn nhà, không đụng tới giá, nên không có rò rỉ.</p>
+    </div></div>
+    <div class="step"><div class="step-n">5</div><div>
+      <h3>Chặn giá trị cực đoan ở mức 1% và 99%</h3>
+      <p class="why"><b>Vì sao:</b> diện tích đất có căn lên tới 1,65 triệu feet vuông — một điểm như vậy đủ kéo lệch cả mô hình. Chặn (winsorise) giữ lại dòng dữ liệu nhưng giới hạn giá trị ở ngưỡng hợp lý: nhà đắt vẫn là nhà đắt, chỉ là không còn “la hét” quá to. Cách này giữ được thông tin tốt hơn xóa dòng.</p>
+    </div></div>
+    <div class="step"><div class="step-n">6</div><div>
+      <h3>Điền giá trị thiếu bằng trung vị / giá trị thường gặp nhất</h3>
+      <p class="why"><b>Vì sao:</b> bộ này thực ra không thiếu ô nào, nhưng bước này vẫn để sẵn trong chuỗi xử lý cho an toàn — nếu dữ liệu mới có ô trống, hệ thống không sập. Trung vị được chọn vì nó không bị giá trị cực đoan kéo lệch như trung bình.</p>
+    </div></div>
+    <div class="step"><div class="step-n">7</div><div>
+      <h3>Mã hóa mã bưu chính thành cột nhị phân (One-Hot)</h3>
+      <p class="why"><b>Vì sao:</b> mã bưu chính là tên khu vực, không phải con số có thứ tự — khu 98039 không “lớn hơn” khu 98002 theo nghĩa nào cả. Tách thành 70 cột riêng để mỗi khu có hệ số giá của chính nó.</p>
+    </div></div>
+    <div class="step"><div class="step-n">8</div><div>
+      <h3>Chuẩn hóa thang đo — chỉ cho Ridge</h3>
+      <p class="why"><b>Vì sao:</b> Ridge phạt độ lớn của hệ số, nên mọi đặc trưng phải đứng trên cùng một thang thì mức phạt mới công bằng. Random Forest thì không cần bước này, vì cây quyết định chỉ chia dữ liệu theo ngưỡng, thang đo nào cũng như nhau.</p>
+    </div></div>
+    <div class="step"><div class="step-n">9</div><div>
+      <h3>Chia ngẫu nhiên 80/20 và khóa tập kiểm tra</h3>
+      <p class="why"><b>Vì sao:</b> 17.290 dòng để học, 4.323 dòng để chấm điểm. Mọi thông số xử lý — trung vị, ngưỡng chặn, hệ số chuẩn hóa — chỉ học từ phần huấn luyện. Nếu học từ toàn bộ dữ liệu, điểm kiểm tra sẽ đẹp giả tạo.</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section id="mo-hinh">
+  <div class="num">Phần 5</div>
+  <h2>Hai mô hình, hai triết lý trái ngược</h2>
+  <div class="cards">
+    <div class="card ridge">
+      <h3>Ridge — đường thẳng có kỷ luật</h3>
+      <p>Ridge là hồi quy tuyến tính cộng thêm một “mức phạt”: hệ số nào phình quá to sẽ bị kéo nhỏ lại. Nhờ vậy, khi nhiều cột mang thông tin gần giống nhau — như các cột diện tích ở bộ này — mô hình vẫn ổn định thay vì dao động loạn.</p>
+      <ul>
+        <li><strong>Áp vào bài này:</strong> học trên log giá, với mức phạt α = 0,1 được chọn bằng kiểm chứng chéo 5 phần.</li>
+        <li><strong>Điểm mạnh:</strong> đọc được trực tiếp — mỗi khu vực cộng hay trừ bao nhiêu vào giá đều nhìn thấy rõ.</li>
+        <li><strong>Điểm yếu:</strong> chỉ vẽ được quan hệ thẳng; hiệu ứng vị trí cong queo thì nó chịu.</li>
+      </ul>
+    </div>
+    <div class="card rf">
+      <h3>Random Forest — hỏi ý kiến 300 cái cây</h3>
+      <p>Random Forest trồng 300 cây quyết định, mỗi cây nhìn dữ liệu theo một cách hơi khác nhau, rồi lấy trung bình dự đoán của cả rừng. Một cây dễ sai, nhưng cả rừng bỏ phiếu chung thì ổn định hơn nhiều.</p>
+      <ul>
+        <li><strong>Áp vào bài này:</strong> 300 cây, mỗi lá chứa tối thiểu 2 căn nhà, học trên cùng dữ liệu đã xử lý (trừ bước chuẩn hóa).</li>
+        <li><strong>Điểm mạnh:</strong> tự bắt được quan hệ cong và tương tác — ví dụ cùng diện tích nhưng khác vĩ độ thì giá khác hẳn.</li>
+        <li><strong>Điểm yếu:</strong> không giải thích được từng hệ số, và không đoán ra ngoài khoảng giá đã từng thấy.</li>
+      </ul>
+    </div>
+  </div>
+  <details>
+    <summary>Mở rộng: khác biệt cốt lõi nằm ở đâu?</summary>
+    <div class="body">
+      <p>Ridge đánh cược rằng quan hệ trong dữ liệu là thẳng — và sau khi lấy log, cược đó gần đúng. Random Forest không cược gì cả: nó để dữ liệu tự nói, đổi lại bằng khả năng giải thích kém hơn và nguy cơ học thuộc tập huấn luyện.</p>
+      <p>Ở bài này, hai cách tiếp cận cho kết quả sát nhau (R² trên log giá: 0,879 so với 0,887) chính là bằng chứng cho thấy sau biến đổi log, phần lớn quan hệ đã thẳng — phần cong còn lại chỉ đủ giúp Random Forest nhỉnh hơn một chút.</p>
+    </div>
+  </details>
+</section>
+
+<!-- 6 -->
+<section id="kiem-tra">
+  <div class="num">Phần 6</div>
+  <h2>Kiểm tra mô hình: học thật, học chưa tới, hay học vẹt?</h2>
+  <p>Điểm cao trên dữ liệu đã học chưa nói lên điều gì. Câu hỏi quan trọng hơn là: gặp một căn nhà hoàn toàn mới, mô hình còn đoán trúng không? Ba khái niệm dưới đây là cách người ta kiểm tra chuyện đó — nghe có vẻ sách vở, nhưng bản chất rất giống chuyện học thi.</p>
+
+  <div class="fit3">
+    <div class="card underfit">
+      <h3>Underfitting — học chưa tới</h3>
+      <p>Mô hình quá đơn giản, chưa nắm được quy luật nên đoán dở <em>cả</em> trên dữ liệu đã học lẫn dữ liệu mới.</p>
+      <p><strong>Giống như:</strong> mới đọc lướt qua loa đã đi thi — đề cũ hay đề mới đều làm không được.</p>
+      <p><strong>Dấu hiệu:</strong> điểm lúc học thấp, điểm lúc kiểm tra cũng thấp, hai điểm sát nhau nhưng đều tệ.</p>
+    </div>
+    <div class="card goodfit">
+      <h3>Vừa khớp — học hiểu thật</h3>
+      <p>Mô hình nắm được quy luật chung — diện tích, vị trí, chất lượng ảnh hưởng tới giá ra sao — nên áp sang nhà mới vẫn đúng.</p>
+      <p><strong>Giống như:</strong> hiểu bản chất bài toán, gặp dạng đề lạ vẫn biết cách làm.</p>
+      <p><strong>Dấu hiệu:</strong> điểm lúc học và lúc kiểm tra đều khá, và chênh nhau rất ít.</p>
+    </div>
+    <div class="card badfit">
+      <h3>Overfitting — học vẹt</h3>
+      <p>Mô hình nhớ thuộc lòng cả những chi tiết ngẫu nhiên của dữ liệu đã học — kể cả nhiễu — thay vì học quy luật. Điểm lúc học rất cao, nhưng gặp dữ liệu mới thì tụt hẳn.</p>
+      <p><strong>Giống như:</strong> thuộc lòng từng đáp án trong đề ôn, đổi số liệu một chút là tịt.</p>
+      <p><strong>Dấu hiệu:</strong> điểm lúc học cao vọt, điểm lúc kiểm tra thấp hơn nhiều — khoảng cách giữa hai điểm càng lớn, học vẹt càng nặng.</p>
+    </div>
+  </div>
+
+  <details>
+    <summary>Mở rộng: cách kiểm tra cụ thể là gì?</summary>
+    <div class="body">
+      <p><strong>Một, so điểm học và điểm kiểm tra.</strong> Mô hình được chấm hai lần: một lần trên 17.290 căn đã dùng để học (điểm train), một lần trên 4.323 căn bị khóa lại từ đầu, chưa từng thấy (điểm test). Lấy điểm train trừ điểm test ra “khoảng hở”. Khoảng hở gần 0 là khỏe; khoảng hở lớn là dấu hiệu học vẹt.</p>
+      <p><strong>Hai, kiểm chứng chéo 5 phần (cross-validation).</strong> Thay vì chia dữ liệu một lần, ta chia làm 5 phần, lần lượt lấy từng phần làm bài kiểm tra và học trên 4 phần còn lại, rồi lấy trung bình. Nếu cả 5 lần đều cho điểm gần bằng nhau và gần với điểm test, kết quả không phải do may mắn ở một lần chia. Độ dao động nhỏ — ở bài này chỉ ±0,003 đến ±0,004 — là dấu hiệu mô hình ổn định.</p>
+      <p><strong>Ba, đừng nhầm học vẹt với rò rỉ dữ liệu.</strong> Học vẹt là nhớ nhiễu trong phần đã học. Rò rỉ là được xem trước đáp án — ví dụ một cột được tính ra từ chính giá bán. Bài này đã kiểm tra ở Phần 2: không có cột rò rỉ nào, nên điểm test ở đây là điểm thật.</p>
+      <p>Nói theo ngôn ngữ thống kê: underfitting là <em>lệch</em> nhiều (bias cao — mô hình đơn giản quá nên sai có hệ thống), overfitting là <em>dao động</em> nhiều (variance cao — mô hình nhạy quá, dữ liệu đổi một chút là kết quả đổi hẳn). Mô hình tốt nằm ở giữa hai cực đó.</p>
+    </div>
+  </details>
+
+  <h3 style="margin-top:20px">Áp vào hai mô hình ở bài này: điểm học so với điểm kiểm tra</h3>
+  <p>Số dưới đây là R² trên thang log giá — thang mô hình thực sự học. Thanh dài là điểm cao.</p>
+
+  <div class="tt-group">
+    <h3>Ridge — chênh lệch gần như bằng 0</h3>
+    <div class="tt-row"><span class="tt-lab">Lúc học (train)</span><div class="bar-track"><div class="bar-fill" style="background:var(--ridge);width:87.8%"></div></div><b>0,878</b></div>
+    <div class="tt-row"><span class="tt-lab">Kiểm tra (test)</span><div class="bar-track"><div class="bar-fill" style="background:var(--ridge);width:87.9%;opacity:.55"></div></div><b>0,879</b></div>
+    <p style="font-size:15px;margin-top:6px">Khoảng hở: <span class="gap-ok">0,001</span> — hai điểm gần như trùng nhau.</p>
+  </div>
+
+  <div class="tt-group">
+    <h3>Random Forest — có khoảng hở, nhưng trong tầm kiểm soát</h3>
+    <div class="tt-row"><span class="tt-lab">Lúc học (train)</span><div class="bar-track"><div class="bar-fill" style="background:var(--rf);width:97.4%"></div></div><b>0,974</b></div>
+    <div class="tt-row"><span class="tt-lab">Kiểm tra (test)</span><div class="bar-track"><div class="bar-fill" style="background:var(--rf);width:88.7%;opacity:.55"></div></div><b>0,887</b></div>
+    <p style="font-size:15px;margin-top:6px">Khoảng hở: <span class="gap-mid">0,087</span> — có hụt khi gặp nhà mới, nhưng điểm kiểm tra vẫn cao và ổn định.</p>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Mô hình</th><th>R² lúc học</th><th>R² kiểm tra</th><th>Khoảng hở</th><th>Kiểm chứng 5-fold</th><th>Kết luận</th></tr></thead>
+      <tbody>
+        <tr><th>Đoán bằng giá trung bình</th><td data-l="R² lúc học">≈ 0</td><td data-l="R² kiểm tra">−0,001</td><td data-l="Khoảng hở">≈ 0</td><td data-l="Kiểm chứng 5-fold">—</td><td data-l="Kết luận">Học chưa tới (underfitting)</td></tr>
+        <tr><th>Ridge (α = 0,1)</th><td data-l="R² lúc học">0,878</td><td data-l="R² kiểm tra">0,879</td><td data-l="Khoảng hở">0,001</td><td data-l="Kiểm chứng 5-fold">0,877 ± 0,003</td><td data-l="Kết luận" class="win">Vừa khớp — không học vẹt, không học thiếu</td></tr>
+        <tr><th>Random Forest</th><td data-l="R² lúc học">0,974</td><td data-l="R² kiểm tra">0,887</td><td data-l="Khoảng hở">0,087</td><td data-l="Kiểm chứng 5-fold">0,885 ± 0,004</td><td data-l="Kết luận" class="win">Học thuộc nhẹ, đã được kiềm chế</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cards">
+    <div class="card ridge">
+      <h3>Vì sao Ridge không học vẹt — và cũng không học thiếu?</h3>
+      <ul>
+        <li><strong>Không học vẹt</strong> vì Ridge vốn “cứng”: nó chỉ được vẽ một quan hệ thẳng, lại bị mức phạt α = 0,1 kéo các hệ số nhỏ lại. Một mô hình bị ghìm như vậy không đủ linh hoạt để ghi nhớ từng chi tiết ngẫu nhiên của 17.290 căn nhà — muốn học vẹt cũng không học được. Bằng chứng là điểm học và điểm kiểm tra gần như bằng nhau (0,878 so với 0,879).</li>
+        <li><strong>Không học thiếu</strong> vì đường thẳng ở đây là đủ: sau khi lấy log giá và log diện tích, quan hệ trong dữ liệu đã gần thẳng, và mô hình được cấp đủ đặc trưng — diện tích, chất lượng, vị trí, 70 khu vực. Điểm kiểm tra 0,879 so với mức ≈ 0 của cách đoán trung bình cho thấy nó đã học được gần hết quy luật có trong dữ liệu.</li>
+      </ul>
+    </div>
+    <div class="card rf">
+      <h3>Vì sao Random Forest chỉ học thuộc nhẹ, chưa thành học vẹt?</h3>
+      <ul>
+        <li><strong>Nó có sẵn nguy cơ học vẹt:</strong> cây quyết định sâu có thể chia nhỏ dữ liệu tới mức ghi nhớ từng nhóm nhà riêng lẻ, nên điểm lúc học lên tới 0,974 — cao hơn điểm kiểm tra 0,087. Đây là học thuộc ở mức nhẹ, cần nhận diện chứ không nên giấu.</li>
+        <li><strong>Cái kiềm nó lại là cơ chế “cả rừng”:</strong> mỗi cây chỉ học trên một mẫu con rút ngẫu nhiên và chỉ được xem một phần đặc trưng, rồi 300 cây lấy trung bình kết quả. Chi tiết ngẫu nhiên mà một cây nhớ được sẽ bị 299 cây còn lại pha loãng. Thêm nữa, mỗi lá phải chứa tối thiểu 2 căn nhà nên cây không được chia tới từng căn riêng lẻ, và tập học lớn — hơn 17.000 căn — khiến việc ghi nhớ xuôi theo nhiễu khó hơn nhiều.</li>
+        <li><strong>Bằng chứng nó vẫn “hiểu bài”:</strong> kiểm chứng chéo 5 phần cho 0,885 ± 0,004 — gần như trùng điểm kiểm tra 0,887 và dao động rất nhỏ. Nếu rừng chỉ học vẹt, điểm khi đổi phần dữ liệu kiểm tra đã sụp mạnh và nhảy loạn giữa các lần chia.</li>
+      </ul>
+    </div>
+  </div>
+
+  <details>
+    <summary>Mở rộng: nếu mô hình bị học vẹt thì chữa thế nào?</summary>
+    <div class="body">
+      <p>Nguyên tắc chung là làm mô hình “bớt tự do” lại hoặc cho nó thêm dữ liệu. Với Ridge: tăng α để phạt hệ số mạnh hơn. Với Random Forest: giảm độ sâu của cây, tăng số nhà tối thiểu trong mỗi lá, hoặc tăng số cây để trung bình mượt hơn. Thêm dữ liệu học cũng giúp — càng nhiều nhà thật, mô hình càng khó ghi nhớ từng căn và buộc phải học quy luật chung; khoảng hở giữa điểm học và điểm kiểm tra thường thu hẹp dần khi tập học lớn lên.</p>
+      <p>Ở bài này chưa cần chữa gì thêm: Ridge đã cân bằng sẵn, còn khoảng hở 0,087 của Random Forest là cái giá chấp nhận được để đổi lấy điểm kiểm tra cao nhất (0,887) — nó chỉ trở thành vấn đề nếu khoảng hở phình to trong khi điểm kiểm tra tụt xuống.</p>
+    </div>
+  </details>
+</section>
+
+<!-- 7 -->
+<section id="ket-qua">
+  <div class="num">Phần 7</div>
+  <h2>Kết quả: cả hai đều qua mốc 0,80 — trên cả hai thang đo</h2>
+  <p>R² cho biết mô hình giải thích được bao nhiêu phần biến động của giá: 1,0 là hoàn hảo, 0 là ngang với việc đoán bừa bằng giá trung bình. Vì mô hình học trên log giá, báo cáo trình bày cả hai thang — chấm trên log giá và chấm lại sau khi quy về USD. Bấm để chuyển thang:</p>
+
+  <div class="toggle" role="group" aria-label="Chọn thang đo R²">
+    <button id="btnLog" aria-pressed="true">Thang log giá</button>
+    <button id="btnRaw" aria-pressed="false">Thang giá thật (USD)</button>
+  </div>
+  <div id="r2bars" aria-live="polite"></div>
+  <p><small id="r2note"></small></p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Mô hình</th><th>R² (log)</th><th>R² (USD)</th><th>Sai số TB (USD)</th><th>Sai số % trung vị</th><th>Kiểm chứng 5-fold</th></tr></thead>
+      <tbody>
+        <tr><th>Đoán bằng giá trung bình</th><td data-l="R² (log)">−0,001</td><td data-l="R² (USD)">−0,050</td><td data-l="Sai số TB (USD)">229.795</td><td data-l="Sai số % trung vị">34,81%</td><td data-l="Kiểm chứng 5-fold">—</td></tr>
+        <tr><th>Ridge (α = 0,1)</th><td data-l="R² (log)">0,879</td><td data-l="R² (USD)">0,837</td><td data-l="Sai số TB (USD)">79.091</td><td data-l="Sai số % trung vị">9,95%</td><td data-l="Kiểm chứng 5-fold">0,877 ± 0,003</td></tr>
+        <tr><th>Random Forest</th><td data-l="R² (log)" class="win">0,887</td><td data-l="R² (USD)" class="win">0,855</td><td data-l="Sai số TB (USD)" class="win">74.654</td><td data-l="Sai số % trung vị" class="win">8,83%</td><td data-l="Kiểm chứng 5-fold" class="win">0,885 ± 0,004</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Đặt cạnh cách đoán ngây thơ nhất — lấy giá trung bình cho mọi căn — cả hai mô hình đều bỏ xa: sai số trung vị giảm từ gần 35% xuống còn khoảng 9%. Nghĩa là với một căn nhà điển hình, mô hình đoán lệch chưa tới một phần mười giá thật.</p>
+
+  <details>
+    <summary>Mở rộng: mô hình nào “nhìn” vào đâu khi đoán?</summary>
+    <div class="body">
+      <p><strong>Random Forest coi vĩ độ là tín hiệu mạnh nhất</strong> — bỏ vĩ độ đi, R² giảm tới 0,628. Tiếp theo là diện tích ở (0,221) và điểm chất lượng (0,172). Thú vị ở chỗ mã bưu chính gần như vô dụng với Random Forest (0,004), vì tọa độ đã mang gần hết thông tin vị trí rồi.</p>
+      <p><strong>Ridge thì kể câu chuyện vị trí bằng tiền cụ thể:</strong> hệ số lớn nhất thuộc về khu 98039 — Medina — ở mức +0,79, rồi tới 98004 (+0,61) và 98112 (+0,52); chiều ngược lại, khu 98023 trừ tới −0,46. Nói cách khác, cùng một căn nhà, chỉ cần đổi khu là giá đã khác hẳn.</p>
+      <p><strong>Một ví dụ thật trong tập kiểm tra:</strong> căn nhà bán 365.000 USD — Ridge đoán 376.498 USD, Random Forest đoán 375.481 USD. Cả hai đều lệch khoảng 3%, rất sát.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Mở rộng: có nên tin con số này không?</summary>
+    <div class="body">
+      <p>Có cơ sở để tin. Kiểm chứng chéo 5 phần cho kết quả gần như trùng với điểm trên tập kiểm tra và dao động rất nhỏ, nên đây không phải may mắn của một lần chia dữ liệu.</p>
+      <p>Cũng phải nói thẳng điểm chưa đẹp: Random Forest có học thuộc nhẹ tập huấn luyện (R² lúc học là 0,974, lúc kiểm tra còn 0,887 — phân tích đầy đủ ở Phần 6). Và phần dư cho thấy nhóm nhà siêu đắt vẫn khó đoán nhất — độ lệch ở nhóm giá cao nhất lớn hơn hẳn các nhóm còn lại, vì những căn đó ít và mỗi căn một vẻ.</p>
+    </div>
+  </details>
+</section>
+
+<!-- 8 -->
+<section id="ket-luan">
+  <div class="num">Phần 8</div>
+  <h2>Kết luận và ý nghĩa thực tế</h2>
+  <p>Giá nhà ở King County chạy theo ba thứ, theo đúng thứ tự này: <strong>vị trí, diện tích ở, và chất lượng xây dựng</strong>. Vị trí thắng áp đảo — một căn nhà ven hồ ở Medina có giá trung bình 2,16 triệu USD, gấp hơn 9 lần khu rẻ nhất; nhà có mặt tiền sông đắt gấp khoảng 3 lần nhà thường. Ai định giá một căn nhà ở khu vực này, ba con số cần nhìn đầu tiên là mã khu vực, diện tích và điểm grade.</p>
+  <p>Về mô hình: Random Forest thắng nhẹ về độ chính xác, Ridge thắng về khả năng giải thích. Nếu cần một con số đáng tin để ra quyết định, chọn Random Forest; nếu cần giải thích <em>vì sao</em> căn nhà có giá đó — cho khách hàng, cho báo cáo — Ridge dễ trình bày hơn nhiều.</p>
+  <details>
+    <summary>Mở rộng: những hạn chế phải thừa nhận</summary>
+    <div class="body">
+      <p>Dữ liệu chỉ gói trong một năm 2014–2015 và một thị trường duy nhất, nên kết luận không tự động đúng cho nơi khác hay thời điểm khác. Bộ dữ liệu cũng không có biến kinh tế vĩ mô nào — lãi suất, thu nhập khu vực — nên mô hình chỉ mô tả được phía căn nhà, chưa mô tả được phía thị trường.</p>
+      <p>Thêm nữa, Random Forest không ngoại suy được: gặp một căn nhà đắt hơn mọi căn từng thấy, nó sẽ đoán thấp hơn giá thật. Và việc tách mã bưu chính thành 70 cột khiến những khu ít giao dịch có ước lượng kém ổn định hơn các khu đông đúc.</p>
+    </div>
+  </details>
+</section>
+
+<footer>
+  <p>Nguồn dữ liệu: “House Sales in King County, USA” — Kaggle, harlfoxem/housesalesprediction. Toàn bộ số liệu trong báo cáo lấy từ một lần chạy phân tích duy nhất: chia ngẫu nhiên 80/20 (mã hạt giống 42), kiểm chứng chéo 5 phần, đánh giá trên 4.323 giao dịch kiểm tra.</p>
+</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var INK="#111111", RIDGE="#1d4ed8", RF="#047857", WARN="#b45309", GRID="#e2e2e2", MUT="#555";
+
+  function svgEl(tag, attrs){
+    var el=document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for(var k in attrs) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+  function hbars(host, data, opts){
+    // data: [{label, value, color, fmt}]
+    var W=760, rowH=34, top=8, labelW=196, valW=86;
+    var H=top + data.length*rowH + 6;
+    var max=opts.max;
+    var svg=svgEl("svg",{viewBox:"0 0 "+W+" "+H, role:"img", "aria-label":opts.title});
+    data.forEach(function(d,i){
+      var y=top+i*rowH;
+      var t=svgEl("text",{x:labelW-10,y:y+rowH/2+5,"text-anchor":"end","font-size":"14.5",fill:INK});
+      t.textContent=d.label; svg.appendChild(t);
+      var bw=(W-labelW-valW)*(d.value/max);
+      if(bw<0) bw=0;
+      svg.appendChild(svgEl("rect",{x:labelW,y:y+5,width:bw,height:rowH-12,rx:5,fill:d.color||RIDGE}));
+      var v=svgEl("text",{x:labelW+bw+8,y:y+rowH/2+5,"font-size":"14.5","font-weight":"700",fill:INK});
+      v.textContent=d.fmt; svg.appendChild(v);
+    });
+    host.innerHTML=""; host.appendChild(svg);
+  }
+  function vbars(host, data, opts){
+    var W=760,H=300,base=248,left=56,right=16,top=26;
+    var svg=svgEl("svg",{viewBox:"0 0 "+W+" "+H, role:"img","aria-label":opts.title});
+    // gridlines
+    opts.ticks.forEach(function(tk){
+      var y=base-(base-top)*(tk/opts.max);
+      svg.appendChild(svgEl("line",{x1:left,x2:W-right,y1:y,y2:y,stroke:GRID,"stroke-width":1}));
+      var t=svgEl("text",{x:left-8,y:y+4,"text-anchor":"end","font-size":"12.5",fill:MUT});
+      t.textContent=tk.label; svg.appendChild(t);
+    });
+    var slot=(W-left-right)/data.length, bw=Math.min(120, slot*0.52);
+    data.forEach(function(d,i){
+      var cx=left+slot*i+slot/2;
+      var h=(base-top)*(d.value/opts.max);
+      svg.appendChild(svgEl("rect",{x:cx-bw/2,y:base-h,width:bw,height:h,rx:6,fill:d.color}));
+      var v=svgEl("text",{x:cx,y:base-h-8,"text-anchor":"middle","font-size":"14.5","font-weight":"700",fill:INK});
+      v.textContent=d.fmt; svg.appendChild(v);
+      var l=svgEl("text",{x:cx,y:base+22,"text-anchor":"middle","font-size":"13.5",fill:INK});
+      l.textContent=d.label; svg.appendChild(l);
+      if(d.sub){var s=svgEl("text",{x:cx,y:base+40,"text-anchor":"middle","font-size":"12",fill:MUT}); s.textContent=d.sub; svg.appendChild(s);}
+    });
+    svg.appendChild(svgEl("line",{x1:left,x2:W-right,y1:base,y2:base,stroke:INK,"stroke-width":1.5}));
+    host.innerHTML=""; host.appendChild(svg);
+  }
+
+  var charts={
+    corr:{title:"Tương quan với giá bán — diện tích và chất lượng dẫn đầu",
+      draw:function(h){ hbars(h,[
+        {label:"Diện tích ở",value:0.702,fmt:"0,70",color:RF},
+        {label:"Điểm chất lượng",value:0.667,fmt:"0,67",color:RF},
+        {label:"Diện tích tầng trên",value:0.606,fmt:"0,61"},
+        {label:"Diện tích ở quanh khu",value:0.585,fmt:"0,59"},
+        {label:"Số phòng tắm",value:0.525,fmt:"0,53"},
+        {label:"Điểm view",value:0.397,fmt:"0,40"},
+        {label:"Vĩ độ (lat)",value:0.307,fmt:"0,31"},
+        {label:"Mặt tiền sông",value:0.266,fmt:"0,27"}
+      ],{max:0.8,title:"Biểu đồ tương quan giữa các đặc trưng và giá bán"});},
+      note:"<b>Đọc biểu đồ:</b> diện tích ở là yếu tố đi cùng giá mạnh nhất, ngay sau là điểm chất lượng. Hiểu nôm na: nhà càng to và xây càng tốt thì càng đắt — điều này khớp với trực giác, và nó báo trước rằng mô hình sẽ học tốt, vì tín hiệu trong dữ liệu rất rõ."},
+    dist:{title:"Phân bố giá — trung vị 450.000 USD nhưng đuôi phải kéo rất dài",
+      draw:function(h){ vbars(h,[
+        {label:"Giá tối thiểu",value:75000,fmt:"75 nghìn",color:"#888"},
+        {label:"Trung vị",value:450000,fmt:"450 nghìn",color:RIDGE,sub:"một nửa số nhà rẻ hơn mức này"},
+        {label:"Trung bình",value:540088,fmt:"540 nghìn",color:RIDGE,sub:"bị nhà đắt kéo lên"},
+        {label:"Mức 99%",value:1964400,fmt:"1,96 triệu",color:WARN,sub:"99% số nhà rẻ hơn mức này"},
+        {label:"Giá tối đa",value:7700000,fmt:"7,7 triệu",color:"#b91c1c",sub:"gấp 17 lần trung vị"}
+      ],{max:8000000,ticks:[{v:0,label:"0"},{v:2000000,label:"2 tr"},{v:4000000,label:"4 tr"},{v:6000000,label:"6 tr"},{v:8000000,label:"8 tr"}].map(function(t){return {value:t.v,label:t.label};}).map(function(t){return t;}),title:"Biểu đồ các mốc phân bố của giá nhà"});
+        // fix ticks shape for vbars (expects {value,label} via tk/opts.max -> adapt)
+      },
+      note:"<b>Đọc biểu đồ:</b> trung bình cao hơn trung vị gần 100.000 USD — dấu hiệu kinh điển của phân bố lệch phải: số ít nhà siêu đắt kéo mọi thống kê lên. Độ lệch (skew) của giá là 4,02; sau khi lấy log, con số này chỉ còn 0,43. Đó là lý do toàn bộ mô hình học trên log giá."},
+    place:{title:"Cùng một thị trường, giá chênh nhau tới 9 lần theo khu vực",
+      draw:function(h){ hbars(h,[
+        {label:"Khu đắt nhất (Medina)",value:2160607,fmt:"2,16 tr USD",color:WARN},
+        {label:"Nhà mặt tiền sông",value:1661876,fmt:"1,66 tr USD",color:WARN},
+        {label:"Nhà thường",value:531564,fmt:"532 nghìn",color:RIDGE},
+        {label:"Khu rẻ nhất (98002)",value:234284,fmt:"234 nghìn",color:"#888"}
+      ],{max:2400000,title:"Biểu đồ giá trung bình theo khu vực và mặt tiền sông"});},
+      note:"<b>Đọc biểu đồ:</b> vị trí là tiền. Chỉ 163 căn có mặt tiền sông nhưng giá trung bình của chúng gấp khoảng 3 lần nhà thường; còn khoảng cách giữa khu đắt nhất và rẻ nhất lên tới hơn 9 lần. Đây là lý do vì sao sau này cả hai mô hình đều xếp vị trí lên hàng đầu."},
+    outlier:{title:"Tỉ lệ giá trị cực đoan theo cột — diện tích đất “ồn” nhất",
+      draw:function(h){ hbars(h,[
+        {label:"Diện tích đất (khu vực)",value:10.2,fmt:"10,2%",color:"#b91c1c"},
+        {label:"Diện tích đất",value:11.2,fmt:"11,2%",color:"#b91c1c"},
+        {label:"Giá bán",value:5.3,fmt:"5,3%",color:WARN}
+      ],{max:12,title:"Biểu đồ tỉ lệ outlier theo phương pháp IQR"});},
+      note:"<b>Đọc biểu đồ:</b> theo quy tắc IQR, hơn 1 trong 10 giá trị diện tích đất nằm ngoài vùng thông thường — có căn ghi tới 1,65 triệu feet vuông đất. Những điểm này không bị xóa; chúng được chặn lại ở ngưỡng 1%/99% trong bước tiền xử lý, để một vài căn dị biệt không chi phối cả mô hình."}
+  };
+  // patch dist ticks: vbars expects ticks as numbers with .label via tk value — handle by custom: redefine
+  charts.dist.draw=function(h){
+    var W=760,H=300,base=248,left=56,right=16,top=26,max=8000000;
+    var svg=svgEl("svg",{viewBox:"0 0 "+W+" "+H,role:"img","aria-label":"Biểu đồ các mốc phân bố của giá nhà"});
+    [[0,"0"],[2000000,"2 tr"],[4000000,"4 tr"],[6000000,"6 tr"],[8000000,"8 tr"]].forEach(function(tk){
+      var y=base-(base-top)*(tk[0]/max);
+      svg.appendChild(svgEl("line",{x1:left,x2:W-right,y1:y,y2:y,stroke:GRID,"stroke-width":1}));
+      var t=svgEl("text",{x:left-8,y:y+4,"text-anchor":"end","font-size":"12.5",fill:MUT}); t.textContent=tk[1]; svg.appendChild(t);
+    });
+    var data=[
+      {label:"Giá tối thiểu",value:75000,fmt:"75 nghìn",color:"#888888"},
+      {label:"Trung vị",value:450000,fmt:"450 nghìn",color:RIDGE,sub:"một nửa số nhà rẻ hơn mức này"},
+      {label:"Trung bình",value:540088,fmt:"540 nghìn",color:RIDGE,sub:"bị nhà đắt kéo lên"},
+      {label:"Mức 99%",value:1964400,fmt:"1,96 triệu",color:WARN,sub:"99% số nhà rẻ hơn mức này"},
+      {label:"Giá tối đa",value:7700000,fmt:"7,7 triệu",color:"#b91c1c",sub:"gấp 17 lần trung vị"}
+    ];
+    var slot=(W-left-right)/data.length, bw=Math.min(110,slot*0.5);
+    data.forEach(function(d,i){
+      var cx=left+slot*i+slot/2, hh=(base-top)*(d.value/max); if(hh<4)hh=4;
+      svg.appendChild(svgEl("rect",{x:cx-bw/2,y:base-hh,width:bw,height:hh,rx:6,fill:d.color}));
+      var v=svgEl("text",{x:cx,y:base-hh-8,"text-anchor":"middle","font-size":"14.5","font-weight":"700",fill:INK}); v.textContent=d.fmt; svg.appendChild(v);
+      var l=svgEl("text",{x:cx,y:base+22,"text-anchor":"middle","font-size":"13.5",fill:INK}); l.textContent=d.label; svg.appendChild(l);
+      if(d.sub){var s=svgEl("text",{x:cx,y:base+40,"text-anchor":"middle","font-size":"11.5",fill:MUT}); s.textContent=d.sub; svg.appendChild(s);}
+    });
+    svg.appendChild(svgEl("line",{x1:left,x2:W-right,y1:base,y2:base,stroke:INK,"stroke-width":1.5}));
+    h.innerHTML=""; h.appendChild(svg);
+  };
+
+  var titleEl=document.getElementById("chartTitle"), host=document.getElementById("chartHost"), note=document.getElementById("chartNote");
+  function showChart(key){
+    var c=charts[key]; if(!c) return;
+    titleEl.textContent=c.title; c.draw(host); note.innerHTML=c.note;
+    var btns=document.querySelectorAll(".tabs button");
+    btns.forEach(function(b){ b.setAttribute("aria-selected", b.getAttribute("data-chart")===key ? "true":"false"); });
+  }
+  document.querySelectorAll(".tabs button").forEach(function(b){
+    b.addEventListener("click", function(){ showChart(b.getAttribute("data-chart")); });
+  });
+  showChart("corr");
+
+  /* R2 toggle */
+  var r2data={
+    log:{rows:[
+      {label:"Đoán bằng giá trung bình",value:0,display:"−0,001",color:"#999999"},
+      {label:"Ridge",value:0.8793,display:"0,879",color:RIDGE},
+      {label:"Random Forest",value:0.8867,display:"0,887",color:RF}],
+      note:"Thang log giá là thang mô hình thực sự học. Cả hai mô hình đều vượt xa mốc 0,80; Random Forest hơn Ridge đúng 0,007 — một khoảng rất nhỏ."},
+    raw:{rows:[
+      {label:"Đoán bằng giá trung bình",value:0,display:"−0,050",color:"#999999"},
+      {label:"Ridge",value:0.8366,display:"0,837",color:RIDGE},
+      {label:"Random Forest",value:0.8545,display:"0,855",color:RF}],
+      note:"Quy về USD, R² giảm một chút ở cả hai mô hình — chuyện bình thường, vì sai số ở nhóm nhà đắt bị phóng đại khi đổi về tiền thật. Quan trọng là cả hai vẫn giữ trên 0,80."}
+  };
+  var r2host=document.getElementById("r2bars"), r2note=document.getElementById("r2note");
+  var btnLog=document.getElementById("btnLog"), btnRaw=document.getElementById("btnRaw");
+  function showR2(mode){
+    var d=r2data[mode];
+    r2host.innerHTML="";
+    d.rows.forEach(function(r){
+      var row=document.createElement("div"); row.className="bar-row";
+      var lab=document.createElement("span"); lab.textContent=r.label;
+      var track=document.createElement("div"); track.className="bar-track";
+      var fill=document.createElement("div"); fill.className="bar-fill";
+      fill.style.background=r.color; fill.style.width="0%";
+      track.appendChild(fill);
+      var val=document.createElement("b"); val.textContent=r.display;
+      row.appendChild(lab); row.appendChild(track); row.appendChild(val);
+      r2host.appendChild(row);
+      requestAnimationFrame(function(){ requestAnimationFrame(function(){ fill.style.width=(Math.max(r.value,0)*100).toFixed(1)+"%"; }); });
+    });
+    r2note.textContent=d.note;
+    btnLog.setAttribute("aria-pressed", mode==="log"?"true":"false");
+    btnRaw.setAttribute("aria-pressed", mode==="raw"?"true":"false");
+  }
+  btnLog.addEventListener("click",function(){showR2("log");});
+  btnRaw.addEventListener("click",function(){showR2("raw");});
+  showR2("log");
+})();
+</script>
+</body>
+</html>

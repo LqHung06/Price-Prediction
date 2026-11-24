@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light" />
+<link rel="icon" href="data:," />
+<title>Báo cáo tối ưu tiền xử lý Melbourne</title>
+<style>
+  :root{
+    --ink:#111111;
+    --ink-soft:#3d3d3d;
+    --ink-faint:#5c5c5c;
+    --paper:#ffffff;
+    --panel:#f6f6f3;
+    --line:#d9d9d2;
+    --accent:#14532d;
+    --accent-soft:#e8f2ea;
+    --warn:#8a3b12;
+    --warn-soft:#fbf0e6;
+    --bad:#8f1d1d;
+    --good:#14532d;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-size:16.5px;line-height:1.65;
+  }
+  main{max-width:880px;margin:0 auto;padding:28px 20px 64px}
+  h1{font-size:30px;line-height:1.25;margin:0 0 10px;letter-spacing:-.01em}
+  h2{font-size:22px;line-height:1.3;margin:0 0 8px}
+  h3{font-size:17px;margin:0 0 6px}
+  p{margin:0 0 12px}
+  .lede{font-size:17.5px;color:var(--ink-soft);max-width:68ch}
+  .meta{color:var(--ink-faint);font-size:14px;margin-bottom:22px}
+  .meta a{color:var(--accent);text-underline-offset:3px}
+  section{margin-top:38px;border-top:2px solid var(--ink);padding-top:18px}
+  .sec-note{color:var(--ink-soft);max-width:70ch}
+  /* verdict */
+  .verdict{border:2px solid var(--ink);padding:18px 20px;margin:22px 0 6px;background:var(--paper)}
+  .verdict .big{font-size:20px;font-weight:700;line-height:1.4;margin-bottom:6px}
+  .verdict p{margin-bottom:8px}
+  .verdict p:last-child{margin-bottom:0}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+  .split .box{border:1px solid var(--line);padding:14px 16px;background:var(--panel)}
+  .split .box .tag{font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-faint)}
+  .split .box .num{font-size:26px;font-weight:800;line-height:1.2;margin:4px 0 2px}
+  .ok{color:var(--good);font-weight:700}
+  .no{color:var(--bad);font-weight:700}
+  .mid{color:var(--warn);font-weight:700}
+  /* tables */
+  .tbl-wrap{overflow-x:auto;margin:14px 0}
+  table{border-collapse:collapse;width:100%;font-size:15px;min-width:560px}
+  th,td{border:1px solid var(--line);padding:9px 11px;text-align:right;vertical-align:top}
+  th{background:var(--panel);font-weight:700}
+  th:first-child,td:first-child{text-align:left}
+  td small{color:var(--ink-faint);display:block;font-size:13px}
+  tr.win td{background:var(--accent-soft)}
+  tr.hurt td{background:#faf0f0}
+  .delta-up{color:var(--good);font-weight:700;white-space:nowrap}
+  .delta-down{color:var(--bad);font-weight:700;white-space:nowrap}
+  .delta-flat{color:var(--ink-faint);font-weight:700;white-space:nowrap}
+  /* steps / rules */
+  .rules{display:grid;gap:12px;margin:16px 0}
+  .rule{display:flex;gap:14px;border:1px solid var(--line);padding:14px 16px;background:var(--paper)}
+  .rule .n{flex:0 0 34px;width:34px;height:34px;border:2px solid var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px}
+  .rule p{margin:0;color:var(--ink-soft)}
+  .rule strong{color:var(--ink)}
+  /* variant cards */
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+  .card{border:1px solid var(--line);padding:14px 16px;background:var(--paper)}
+  .card .k{font-weight:800;font-size:16px}
+  .card .k span{color:var(--accent)}
+  .card p{margin:6px 0 0;color:var(--ink-soft);font-size:15px}
+  /* tabs + chart */
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 6px}
+  .tabs button{
+    appearance:none;border:2px solid var(--ink);background:var(--paper);color:var(--ink);
+    font:inherit;font-size:15px;font-weight:700;padding:9px 16px;min-height:44px;cursor:pointer;border-radius:999px;
+  }
+  .tabs button[aria-selected="true"]{background:var(--ink);color:#fff}
+  .chart-box{border:1px solid var(--line);padding:16px;margin-top:10px}
+  .chart-box svg{width:100%;height:auto;display:block}
+  .chart-cap{font-size:14px;color:var(--ink-faint);margin-top:10px}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:14px;color:var(--ink-soft);margin-top:6px}
+  .legend i{display:inline-block;width:14px;height:14px;margin-right:6px;vertical-align:-2px}
+  /* details */
+  details{border:1px solid var(--line);margin:12px 0;background:var(--paper)}
+  summary{cursor:pointer;padding:13px 16px;min-height:48px;font-weight:700;list-style:none;display:flex;align-items:center;gap:10px}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"+";font-size:20px;font-weight:800;line-height:1;width:20px;flex:0 0 20px}
+  details[open ] summary::before{content:"–"}
+  details .body{padding:0 16px 14px 46px;color:var(--ink-soft)}
+  details .body p:last-child{margin-bottom:0}
+  /* explain list */
+  .why{display:grid;gap:12px;margin:16px 0}
+  .why .item{border-left:4px solid var(--ink);padding:4px 0 4px 14px}
+  .why .item p{margin:4px 0 0;color:var(--ink-soft)}
+  .note{background:var(--warn-soft);border:1px solid #e5cdb4;padding:14px 16px;margin:14px 0}
+  .note p{margin:0 0 8px}
+  .note p:last-child{margin:0}
+  .plain{background:var(--panel);border:1px solid var(--line);padding:14px 16px;margin:14px 0}
+  .plain p:last-child{margin-bottom:0}
+  ul.tight{margin:6px 0 12px;padding-left:22px}
+  ul.tight li{margin-bottom:6px}
+  .bars-mini{display:grid;gap:10px;margin:14px 0}
+  .bar-row{display:grid;grid-template-columns:150px 1fr 64px;gap:10px;align-items:center;font-size:14.5px}
+  .bar-track{background:#ececea;height:20px;position:relative}
+  .bar-fill{position:absolute;inset:0 auto 0 0;background:var(--ink)}
+  .bar-fill.acc{background:var(--accent)}
+  .bar-val{font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+  footer{margin-top:44px;border-top:1px solid var(--line);padding-top:14px;color:var(--ink-faint);font-size:14px}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;background:var(--panel);padding:1px 5px;border:1px solid var(--line)}
+  @media (max-width:640px){
+    main{padding:20px 14px 52px}
+    h1{font-size:25px}
+    .split,.cards{grid-template-columns:1fr}
+    .bar-row{grid-template-columns:108px 1fr 56px}
+    details .body{padding-left:16px}
+    table{min-width:0;font-size:12.5px}
+    th,td{padding:6px 5px;overflow-wrap:break-word}
+  }
+</style>
+</head>
+<body>
+<main>
+
+  <h1>Tối ưu tiền xử lý Melbourne: Ridge có qua được mốc 0,80 không?</h1>
+  <p class="lede">Ở lần chạy gốc, Ridge thiếu mốc 0,80 một chút - R² trên log giá là 0,7936 - trong khi Random Forest đã đạt. Vòng này thử 5 cách đổi tiền xử lý để xem cách nào thật sự giúp, cách nào chỉ là may mắn. Mọi lựa chọn đều dựa trên kiểm chứng chéo ở tập train. Tập test chỉ được chạm đúng một lần ở cuối.</p>
+  <p class="meta">Dữ liệu: Melbourne Housing trên Kaggle (<a href="https://www.kaggle.com/datasets/dansbecker/melbourne-housing-snapshot">dansbecker/melbourne-housing-snapshot</a>) - 13.580 giao dịch, 2016–2017, giá tính bằng AUD. Chia ngẫu nhiên 80/20, hạt giống 42: train 10.864 dòng, test 2.716 dòng. Biến mục tiêu là log(giá); kết quả được trình bày trên cả hai thang - log giá và giá thật AUD.</p>
+
+  <div class="verdict">
+    <p class="big">Kết luận ngắn: Ridge qua mốc 0,80 trên thang log giá - nhưng chưa qua trên thang giá thật.</p>
+    <p>Phương án thắng là <strong>thêm các cột tương tác</strong> cho Ridge (vị trí × loại nhà). Không đổi mô hình, không đổi gì khác trong pipeline. Random Forest thì gần như không cải thiện - các phương án đã thử đều nằm trong vùng nhiễu.</p>
+    <div class="split">
+      <div class="box">
+        <div class="tag">Ridge + tương tác · test</div>
+        <div class="num">0,8042 <span style="font-size:15px;font-weight:600;color:var(--ink-faint)">R² log giá</span></div>
+        <p style="margin:0">Gốc 0,7936 → tăng 0,0106. <span class="ok">Đạt mốc 0,80 trên thang log.</span><br>R² giá thật: 0,7797 (gốc 0,7583) - <span class="no">chưa đạt 0,80</span>. Sai số tuyệt đối trung bình giảm còn 191.500 AUD, từ 198.759 AUD.</p>
+      </div>
+      <div class="box">
+        <div class="tag">Random Forest + target encoding · test</div>
+        <div class="num">0,8674 <span style="font-size:15px;font-weight:600;color:var(--ink-faint)">R² log giá</span></div>
+        <p style="margin:0">Gốc 0,8685 → <span class="no">tệ hơn một chút</span>. Sai số tuyệt đối trung bình 160.160 AUD, cũng tệ hơn mức gốc 158.610 AUD. <span class="mid">Kết luận: không cải thiện.</span></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHẦN 1 -->
+  <section id="boi-canh">
+    <h2>1. Điểm xuất phát: kết quả gốc thiếu bao nhiêu?</h2>
+    <p class="sec-note">Pipeline gốc đã khá chặt: log giá, điền thiếu bằng trung vị học từ train, gộp suburb hiếm thành nhóm “Other”, chặn ngoại lệ ở phân vị 1%/99%. Dù vậy Ridge vẫn dừng dưới mốc. Câu hỏi của vòng này rất cụ thể - lỗi nằm ở bước tiền xử lý nào, và sửa bước đó có đủ đẩy Ridge qua 0,80 không?</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Mô hình (gốc)</th><th>R² log giá</th><th>R² giá thật</th><th>MAE (AUD)</th><th>Sai số % trung vị</th><th>R² train</th><th>CV 5-fold</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Ridge</strong> (α = 1,0)</td><td>0,7936</td><td>0,7583</td><td>198.759</td><td>14,83%</td><td>0,7955</td><td>0,7875 ± 0,0119</td></tr>
+          <tr><td><strong>Random Forest</strong> (300 cây)</td><td>0,8685</td><td>0,8175</td><td>158.610</td><td>10,39%</td><td>0,9677</td><td>0,860 ± 0,0102</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="sec-note">Khoảng thiếu của Ridge chỉ là 0,0064 trên thang log - rất nhỏ. Nhưng nhỏ không có nghĩa là dễ lấp: nếu thử bừa nhiều cách rồi chọn cách cho điểm test cao nhất, con số đẹp đó có thể chỉ là ăn may trên chính tập test.</p>
+  </section>
+
+  <!-- PHẦN 2 -->
+  <section id="phuong-phap">
+    <h2>2. Cách làm: chọn bằng train, test chỉ chạm một lần</h2>
+    <p class="sec-note">Đây là phần quan trọng nhất của vòng tối ưu. Kết quả có đáng tin hay không nằm ở đây, không nằm ở con số cuối.</p>
+    <div class="rules">
+      <div class="rule"><div class="n">1</div><p><strong>Tái hiện baseline trước.</strong> Chạy lại đúng pipeline gốc và kiểm tra điểm có khớp không. Kết quả: Ridge 0,7936 và Random Forest 0,8685 - khớp chính xác, sai số 0,0000. Baseline không tái hiện được thì mọi so sánh phía sau đều vô nghĩa.</p></div>
+      <div class="rule"><div class="n">2</div><p><strong>So sánh các phương án chỉ bằng kiểm chứng chéo 5-fold trên train.</strong> Tuyệt đối không dò trên test. Dò trên test là một dạng gian lận nhẹ - thử đủ nhiều cách, thế nào cũng có cách “đẹp” trên test nhờ may mắn, và R² sẽ phồng lên giả.</p></div>
+      <div class="rule"><div class="n">3</div><p><strong>Mọi bước tiền xử lý được học lại trong từng fold.</strong> Kể cả target encoding cũng tính out-of-fold, với smoothing m = 10. Nếu tính target encoding trên toàn bộ train rồi mới chia fold, thông tin giá của fold kiểm tra đã lọt vào fold huấn luyện - đó là rò rỉ dữ liệu.</p></div>
+      <div class="rule"><div class="n">4</div><p><strong>Test chỉ đánh giá một lần, ở bước cuối, cho phương án thắng CV.</strong> Mỗi phương án chạy cả Ridge. Random Forest chỉ chạy cho 2 phương án liên quan trực tiếp tới nó, vì các phương án còn lại chủ yếu tác động lên mô hình tuyến tính.</p></div>
+    </div>
+    <details>
+      <summary>Đọc thêm: vì sao không được chọn phương án bằng điểm test?</summary>
+      <div class="body">
+        <p>Tập test sinh ra để đóng vai “dữ liệu chưa từng thấy”. Nếu ta thử 5–10 cách tiền xử lý, chấm tất cả trên test rồi giữ lại cách cao nhất, tập test đã bị dùng để ra quyết định - nó không còn là dữ liệu chưa thấy nữa.</p>
+        <p>Hậu quả là điểm báo cáo sẽ cao hơn năng lực thật của mô hình khi gặp nhà mới. Kiểm chứng chéo trên train tránh được điều này: quyết định chọn phương án chỉ dùng dữ liệu train, còn test giữ nguyên vai trò giám khảo độc lập, chấm đúng một lần.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- PHẦN 3 -->
+  <section id="phuong-an">
+    <h2>3. Năm phương án đã thử - và lý do thử từng cái</h2>
+    <p class="sec-note">Mỗi phương án chỉ thay đúng một bước trong pipeline gốc, giữ nguyên mọi thứ còn lại. Thay một chỗ một lần thì mới biết chỗ nào tạo ra khác biệt.</p>
+    <div class="cards">
+      <div class="card"><p class="k"><span>a.</span> KNN impute thay trung vị</p><p>Điền BuildingArea, YearBuilt, Landsize bằng 5 căn nhà giống nhất (k = 5) thay vì trung vị chung của cả thành phố. Nhà giống nhau thì diện tích và năm xây cũng thường giống nhau - điền theo “hàng xóm” có thể đúng hơn điền một con số chung cho mọi nhà.</p></div>
+      <div class="card"><p class="k"><span>b.</span> Target encoding cho Suburb</p><p>Mã hoá mỗi suburb bằng giá trung bình của chính nó (smoothing m = 10), thay 114 cột OneHot bằng 1 cột số duy nhất. Pipeline gọn hơn nhiều - nhưng gộp 114 mức giá khu vực vào 1 cột có thể làm mất thông tin.</p></div>
+      <div class="card"><p class="k"><span>c.</span> Thêm cột tương tác cho Ridge</p><p>Thêm 5 cột tích: vĩ độ × kinh độ, Distance × từng loại nhà (OneHot Type nhân Distance), log_Landsize × Rooms. Giá nhà phụ thuộc vào kiểu kết hợp - cùng khoảng cách tới trung tâm nhưng nhà riêng và căn hộ chênh giá khác nhau - mà mô hình tuyến tính thuần không tự thấy được.</p></div>
+      <div class="card"><p class="k"><span>d.</span> Giữ suburb có ≥ 10 dòng thay vì ≥ 30</p><p>Ngưỡng gốc giữ suburb có ít nhất 30 dòng trong train, còn lại gộp vào “Other”. Hạ xuống 10 thì suburb chi tiết hơn, Ridge bắt được giá của từng khu nhỏ. Đánh đổi: nhiều cột thưa hơn, dễ nhiễu hơn.</p></div>
+      <div class="card"><p class="k"><span>e.</span> Bỏ 2 cờ thiếu</p><p>Bỏ hai cột BuildingArea_missing và YearBuilt_missing. Đây là phép thử kiểm tra: ở lần chạy gốc, tầm quan trọng hoán vị (permutation importance) của hai cột này gần như bằng 0. Nếu bỏ mà điểm không đổi, chúng đúng là vô dụng.</p></div>
+      <div class="card"><p class="k"><span>b + c.</span> Gộp target encoding + tương tác</p><p>Thử thêm một tổ hợp: dùng target encoding cho Suburb đồng thời thêm tương tác. Mục đích là kiểm tra xem hai thay đổi có cộng dồn lợi ích không, hay phần hại của cái này kéo lùi phần lợi của cái kia.</p></div>
+    </div>
+  </section>
+
+  <!-- PHẦN 4 -->
+  <section id="ket-qua-cv">
+    <h2>4. Kết quả kiểm chứng chéo trên train - bảng quyết định</h2>
+    <p class="sec-note">Toàn bộ bảng dưới đây là R² trên log giá, trung bình 5-fold trên tập train. Đây là căn cứ duy nhất để chọn phương án thắng. Bấm chuyển để xem Ridge hoặc Random Forest.</p>
+
+    <div class="tabs" role="tablist" aria-label="Chọn mô hình xem biểu đồ CV">
+      <button type="button" role="tab" id="tab-ridge" aria-selected="true" data-model="ridge">Ridge</button>
+      <button type="button" role="tab" id="tab-rf" aria-selected="false" data-model="rf">Random Forest</button>
+    </div>
+
+    <div class="chart-box">
+      <div id="cv-chart" aria-live="polite"></div>
+      <div class="legend">
+        <span><i style="background:#111"></i>Phương án gốc (base)</span>
+        <span><i style="background:#14532d"></i>Cao hơn gốc</span>
+        <span><i style="background:#b9b9b2"></i>Thấp hơn hoặc ngang gốc</span>
+      </div>
+      <p class="chart-cap" id="cv-cap">Ridge: tương tác thắng rõ nhất, +0,0148 so với base. Target encoding là phương án duy nhất làm Ridge tệ đi đáng kể.</p>
+    </div>
+
+    <div class="tbl-wrap">
+      <table id="tbl-ridge">
+        <thead><tr><th>Phương án · Ridge</th><th>CV R² log giá</th><th>Chênh so với base</th><th>Thời gian CV</th></tr></thead>
+        <tbody>
+          <tr><td>Base (pipeline gốc, tính chặt chẽ)</td><td>0,7811 ± 0,0126</td><td class="delta-flat">—</td><td>~3 giây</td></tr>
+          <tr><td>a. KNN impute (k = 5)</td><td>0,7914 ± 0,0121</td><td class="delta-up">+0,0103</td><td>~23 giây</td></tr>
+          <tr class="hurt"><td>b. Target encoding Suburb</td><td>0,7766 ± 0,0121</td><td class="delta-down">−0,0045</td><td>~3 giây</td></tr>
+          <tr class="win"><td><strong>c. Thêm tương tác</strong> — thắng</td><td><strong>0,7959 ± 0,0118</strong></td><td class="delta-up">+0,0148</td><td>~4 giây</td></tr>
+          <tr><td>d. Suburb giữ ≥ 10 dòng</td><td>0,7927 ± 0,0129</td><td class="delta-up">+0,0116</td><td>~4 giây</td></tr>
+          <tr><td>e. Bỏ 2 cờ thiếu</td><td>0,7805 ± 0,0128</td><td class="delta-flat">−0,0006</td><td>~3 giây</td></tr>
+          <tr><td>b + c. Target encoding + tương tác</td><td>0,7895 ± 0,0125</td><td class="delta-up">+0,0084</td><td>~3 giây</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tbl-wrap">
+      <table id="tbl-rf">
+        <thead><tr><th>Phương án · Random Forest (CV dùng 150 cây)</th><th>CV R² log giá</th><th>Chênh so với base</th><th>Thời gian CV</th></tr></thead>
+        <tbody>
+          <tr><td>Base (pipeline gốc)</td><td>0,8594 ± 0,0101</td><td class="delta-flat">—</td><td>~154 giây</td></tr>
+          <tr><td>b. Target encoding Suburb</td><td>0,8603 ± 0,0101</td><td class="delta-flat">+0,0009</td><td>~154 giây</td></tr>
+          <tr><td>d. Suburb giữ ≥ 10 dòng</td><td>0,8593 ± 0,0100</td><td class="delta-flat">−0,0001</td><td>~153 giây</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="sec-note">Với Random Forest, mức “thắng” lớn nhất chỉ là +0,0009 - nhỏ hơn nhiều so với độ lệch chuẩn ±0,0101 giữa các fold. Nói thẳng: đó là nhiễu, không phải cải thiện. Vì theo đúng quy trình đã đặt ra, phương án thắng CV vẫn được đem ra test một lần - và kết quả test ở phần sau xác nhận đúng là nhiễu.</p>
+    <details>
+      <summary>Đọc thêm: vì sao CV base ở đây (0,7811) thấp hơn CV gốc (0,7875)?</summary>
+      <div class="body">
+        <p>Không phải mô hình tệ đi. Khác biệt nằm ở độ chặt chẽ: ở lần chạy gốc, việc gộp suburb và chặn ngoại lệ (winsorise) được học trên toàn bộ train trước khi chia fold, nên mỗi fold “nhìn trộm” được một ít thông tin của phần còn lại.</p>
+        <p>Ở vòng này, mọi bước đều học lại bên trong từng fold nên không còn nhìn trộm - điểm CV thấp hơn một chút nhưng trung thực hơn. Hai con số CV của hai bản vì thế không so trực tiếp với nhau được; chỉ so các phương án trong cùng vòng này với nhau.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- PHẦN 5 -->
+  <section id="ket-qua-test">
+    <h2>5. Đánh giá trên test - đúng một lần, cho phương án thắng</h2>
+    <p class="sec-note">Hai phương án thắng CV được huấn luyện lại trên toàn bộ train rồi chấm trên 2.716 dòng test. Bấm chuyển thang đo để xem R² trên log giá hoặc quy về giá thật AUD.</p>
+
+    <div class="tabs" role="tablist" aria-label="Chọn thang đo R²">
+      <button type="button" role="tab" id="scale-log" aria-selected="true" data-scale="log">R² trên log giá</button>
+      <button type="button" role="tab" id="scale-raw" aria-selected="false" data-scale="raw">R² trên giá thật (AUD)</button>
+    </div>
+
+    <div class="chart-box">
+      <div class="bars-mini" id="test-bars"></div>
+      <p class="chart-cap" id="test-cap">Thang log giá: Ridge + tương tác đạt 0,8042 - qua mốc 0,80. Random Forest + target encoding đạt 0,8674 - thấp hơn gốc 0,8685.</p>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Chỉ số (test, 2.716 dòng)</th><th>Ridge gốc</th><th>Ridge + tương tác</th><th>RF gốc</th><th>RF + target encoding</th></tr></thead>
+        <tbody>
+          <tr><td><strong>R² log giá</strong></td><td>0,7936</td><td><strong>0,8042</strong> <span class="delta-up">(+0,0106)</span></td><td>0,8685</td><td>0,8674 <span class="delta-down">(−0,0011)</span></td></tr>
+          <tr><td><strong>R² giá thật (AUD)</strong></td><td>0,7583</td><td><strong>0,7797</strong> <span class="delta-up">(+0,0214)</span></td><td>0,8175</td><td>0,8213 <span class="delta-up">(+0,0038)</span></td></tr>
+          <tr><td>MAE (AUD)</td><td>198.759</td><td><strong>191.500</strong> <span class="delta-up">(giảm ~7.259)</span></td><td>158.610</td><td>160.160 <span class="delta-down">(tăng ~1.550)</span></td></tr>
+          <tr><td>RMSE (AUD)</td><td>309.874</td><td>295.788</td><td>269.213</td><td>266.409</td></tr>
+          <tr><td>Sai số % trung vị (MedAPE)</td><td>14,83%</td><td>14,22%</td><td>10,39%</td><td>10,80%</td></tr>
+          <tr><td>R² train (log giá)</td><td>0,7955</td><td>0,8092</td><td>0,9677</td><td>0,9598</td></tr>
+          <tr><td>CV 5-fold (log giá)</td><td>0,7875 ± 0,0119</td><td>0,7959 ± 0,0118</td><td>0,860 ± 0,0102</td><td>0,8603 ± 0,0101</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="plain">
+      <p><strong>Đọc kết quả cho đúng:</strong> Ridge cải thiện thật ở mọi chỉ số - R² tăng ở cả hai thang, MAE giảm khoảng 7.259 AUD mỗi căn. Nhưng mốc 0,80 chỉ đạt trên thang log giá (0,8042); trên thang giá thật vẫn là 0,7797. Báo cáo ghi cả hai, không chọn thang đẹp hơn để khoe.</p>
+      <p>Random Forest thì ngược lại: R² log và MAE đều tệ hơn gốc một chút, chỉ R² giá thật nhích lên +0,0038. Tổng thể là hoà đến hơi thua - đúng như mức thắng CV +0,0009 đã báo trước: nhiễu.</p>
+    </div>
+  </section>
+
+  <!-- PHẦN 6 -->
+  <section id="vi-sao">
+    <h2>6. Vì sao phương án này thắng, phương án kia thua?</h2>
+    <div class="why">
+      <div class="item"><h3>Tương tác thắng (+0,0148 CV) - vì Ridge vốn “mù” với mối kết hợp</h3><p>Ridge là một đường thẳng: nó cộng dồn đóng góp của từng đặc trưng một cách riêng lẻ. Giá nhà lại không vận hành như vậy - hiệu ứng của khoảng cách tới trung tâm khác hẳn nhau giữa nhà riêng và căn hộ. Thêm cột tích (vị trí × loại nhà) là cách duy nhất để mô hình tuyến tính “thấy” mối kết hợp đó. Đây cũng là thay đổi rẻ nhất: CV chỉ mất khoảng 4 giây.</p></div>
+      <div class="item"><h3>KNN impute giúp (+0,0103) - điền theo nhà giống nhất đúng hơn điền số chung</h3><p>Trung vị của cả thành phố là một con số rất chung chung. KNN nhìn vào các đặc trưng còn lại, tìm 5 căn nhà giống nhất rồi lấy diện tích/năm xây của chúng để điền. Với bộ dữ liệu thiếu nặng như Melbourne - BuildingArea thiếu tới 47,5% - cách điền ảnh hưởng rõ rệt tới kết quả.</p></div>
+      <div class="item"><h3>Suburb ≥ 10 giúp Ridge (+0,0116) nhưng không giúp Random Forest (−0,0001)</h3><p>Khu nhỏ có mặt bằng giá riêng; gộp chung vào “Other” làm Ridge mất tín hiệu đó. Random Forest thì đã tự chia nhỏ theo suburb trong lúc mọc cây rồi, nên đưa thêm chi tiết cũng không thêm được gì.</p></div>
+      <div class="item"><h3>Target encoding hại Ridge (−0,0045) - gộp 114 hệ số thành 1 cột là mất thông tin</h3><p>Với OneHot, mỗi suburb có một hệ số riêng, Ridge tự cân được khu nào đắt khu nào rẻ. Ép tất cả vào một cột “giá trung bình của suburb” kèm nhiễu smoothing khiến mô hình chỉ còn một kênh thông tin duy nhất về vị trí theo suburb - và kênh đó ồn hơn. Với Random Forest, cột số này trung tính (+0,0009, tức nhiễu) vì cây vốn xử lý tốt cả hai dạng.</p></div>
+      <div class="item"><h3>Bỏ 2 cờ thiếu gần như không đổi gì (−0,0006) - đúng như dự đoán</h3><p>Việc một căn nhà thiếu hồ sơ diện tích hay năm xây không mang thêm thông tin dự đoán nào, một khi giá trị thiếu đã được điền vào. Kết quả này khớp với tầm quan trọng hoán vị gần bằng 0 ở lần chạy gốc. Giữ hay bỏ đều được; bỏ thì pipeline gọn hơn.</p></div>
+      <div class="item"><h3>Gộp target encoding + tương tác (+0,0084) kém hơn tương tác đứng một mình (+0,0148)</h3><p>Hai thay đổi không cộng dồn. Phần hại của target encoding kéo lùi đúng phần lợi mà tương tác mang lại. Bài học thực tế: “cái nào cũng có vẻ hay” không có nghĩa là gộp lại sẽ hay hơn - phải đo, không được đoán.</p></div>
+    </div>
+    <details>
+      <summary>Đọc thêm: vì sao thêm tương tác không giúp Random Forest?</summary>
+      <div class="body">
+        <p>Cây quyết định sinh ra đã bắt tương tác: mỗi lần rẽ nhánh theo một đặc trưng là nó đang xét đặc trưng đó trong điều kiện của các nhánh trước. “Nhà riêng VÀ gần trung tâm” là một đường đi tự nhiên trong cây, không cần ai tạo sẵn cột tích.</p>
+        <p>Ngược lại, mô hình tuyến tính không có cơ chế rẽ nhánh. Muốn nó hiểu mối kết hợp, con người phải tạo cột kết hợp đưa tận tay. Đó là lý do cùng một thay đổi tiền xử lý lại có tác dụng rất khác nhau trên hai mô hình.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- PHẦN 7 -->
+  <section id="hoc-vet">
+    <h2>7. Kiểm tra nhanh: mô hình tối ưu có bị học vẹt không?</h2>
+    <p class="sec-note">Thêm cột tương tác là thêm “trí nhớ” cho Ridge, nên phải kiểm tra lại khoảng hở giữa điểm train và điểm test - khoảng hở lớn là dấu hiệu học thuộc lòng dữ liệu cũ thay vì học quy luật.</p>
+    <div class="bars-mini">
+      <div class="bar-row"><span>Ridge + tương tác · train</span><div class="bar-track"><div class="bar-fill acc" style="width:80.92%"></div></div><span class="bar-val">0,8092</span></div>
+      <div class="bar-row"><span>Ridge + tương tác · test</span><div class="bar-track"><div class="bar-fill" style="width:80.42%"></div></div><span class="bar-val">0,8042</span></div>
+      <div class="bar-row"><span>RF + target enc. · train</span><div class="bar-track"><div class="bar-fill acc" style="width:95.98%"></div></div><span class="bar-val">0,9598</span></div>
+      <div class="bar-row"><span>RF + target enc. · test</span><div class="bar-track"><div class="bar-fill" style="width:86.74%"></div></div><span class="bar-val">0,8674</span></div>
+    </div>
+    <ul class="tight">
+      <li><strong>Ridge + tương tác: không học vẹt.</strong> Train 0,8092 và test 0,8042 chỉ hở 0,005. CV 0,7959 ± 0,0118 cũng nằm sát test. Năm cột tương tác thêm vào không đủ sức cho mô hình thuộc lòng 10.864 căn nhà - và phép phạt L2 (α = 1,0) vẫn ghìm các hệ số lại.</li>
+      <li><strong>Random Forest: vẫn học thuộc nhẹ, như bản gốc.</strong> Train 0,9598 so với test 0,8674, hở khoảng 0,092. Đây là đặc tính quen thuộc của rừng cây sâu, được kiềm bởi việc lấy trung bình 300 cây và lá tối thiểu 2 nhà. Điểm test vẫn cao và CV ổn định nên mức học thuộc này không gây hại thực tế.</li>
+      <li><strong>Không mô hình nào học chưa tới (underfitting).</strong> Cả hai đều bỏ xa baseline đoán trung bình - mô hình luôn đoán một mức giá chung, R² log giá khoảng 0 - vốn là ví dụ điển hình của học chưa tới.</li>
+    </ul>
+  </section>
+
+  <!-- PHẦN 8 -->
+  <section id="luu-y">
+    <h2>8. Lưu ý trung thực - những gì vòng này chưa làm được</h2>
+    <div class="note">
+      <p><strong>Chưa thử gộp cả ba phương án cùng giúp riêng lẻ.</strong> Tương tác, KNN impute và suburb ≥ 10 đều cho Ridge điểm CV cao hơn base khi đứng một mình. Gộp cả ba có thể đẩy Ridge thêm nữa - nhưng đó mới là giả thuyết chưa chạy, và bài học từ tổ hợp b + c cho thấy gộp không phải lúc nào cũng cộng dồn. Chưa đo thì chưa khẳng định.</p>
+      <p><strong>CV của Random Forest dùng 150 cây thay vì 300</strong> để kịp thời gian - một lần khớp 300 cây mất khoảng 87–270 giây, nhân 5 fold sẽ quá lâu. Lần đánh giá test cuối cùng vẫn dùng đủ 300 cây như bản gốc, nên số test so sánh được trực tiếp.</p>
+      <p><strong>Việc chọn α của RidgeCV chạy trên phần train đã qua tiền xử lý</strong> - có một mức rò rỉ rất nhẹ trong khâu chọn siêu tham số này. Đây là cách làm phổ biến trong thực hành và chỉ ảnh hưởng việc chọn α, không ảnh hưởng kết luận chính.</p>
+      <p><strong>Số CV hai bản không so trực tiếp được</strong> vì bản vòng này học lại mọi bước trong từng fold (chặt chẽ hơn), còn bản gốc học gộp suburb và winsorise trên toàn bộ train trước khi CV. So sánh hợp lệ là: CV so trong cùng một vòng, và test so với test.</p>
+    </div>
+  </section>
+
+  <!-- KẾT LUẬN -->
+  <section id="ket-luan">
+    <h2>9. Kết luận</h2>
+    <ul class="tight">
+      <li><strong>Câu trả lời cho câu hỏi ban đầu: có, nhưng chỉ một nửa.</strong> Đổi tiền xử lý đẩy được Ridge từ 0,7936 lên 0,8042 trên thang log giá - qua mốc 0,80. Trên thang giá thật AUD, Ridge đạt 0,7797 - cải thiện rõ (+0,0214) nhưng vẫn chưa qua mốc.</li>
+      <li><strong>Phương án thắng rất đơn giản:</strong> thêm 5 cột tương tác vào pipeline cũ, không đổi mô hình, chi phí tính toán gần như bằng không. Đôi khi nút thắt không nằm ở mô hình mà nằm ở chỗ dữ liệu được đưa vào chưa nói hết điều mô hình cần nghe.</li>
+      <li><strong>Random Forest đã ở gần trần của nó với pipeline này.</strong> Cả hai phương án thử cho nó đều nằm trong vùng nhiễu. Muốn cải thiện RF thêm, hướng đi khả thi hơn nằm ở siêu tham số hoặc đặc trưng mới, không phải ở các bước tiền xử lý đã thử.</li>
+      <li><strong>Điều đáng giữ lại nhất là quy trình:</strong> tái hiện baseline, chọn bằng CV trên train, test chấm đúng một lần. Nhờ vậy, con số 0,8042 là con số tin được - không phải con số đẹp nhờ dò test.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <p>Nguồn dữ liệu: Kaggle - dansbecker/melbourne-housing-snapshot (Melbourne Housing, giao dịch 2016–2017). Toàn bộ số liệu trong báo cáo lấy từ lần chạy tối ưu đã kiểm chứng: baseline tái hiện khớp 0,0000, lựa chọn phương án bằng CV 5-fold trên train, test đánh giá một lần duy nhất.</p>
+  </footer>
+
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- CV chart (SVG, hand-authored from verified numbers) ---------- */
+  var CV = {
+    ridge: {
+      cap: "Ridge: tương tác thắng rõ nhất, +0,0148 so với base. Target encoding là phương án duy nhất làm Ridge tệ đi đáng kể.",
+      rows: [
+        {label:"c. Tương tác",        val:0.7959, delta:"+0,0148", kind:"up"},
+        {label:"d. Suburb ≥ 10",      val:0.7927, delta:"+0,0116", kind:"up"},
+        {label:"a. KNN impute",       val:0.7914, delta:"+0,0103", kind:"up"},
+        {label:"b+c. TE + tương tác", val:0.7895, delta:"+0,0084", kind:"up"},
+        {label:"Base (gốc)",          val:0.7811, delta:"—",       kind:"base"},
+        {label:"e. Bỏ 2 cờ thiếu",    val:0.7805, delta:"−0,0006", kind:"flat"},
+        {label:"b. Target encoding",  val:0.7766, delta:"−0,0045", kind:"flat"}
+      ]
+    },
+    rf: {
+      cap: "Random Forest (CV dùng 150 cây): cả hai phương án đều nằm trong vùng nhiễu - chênh lệch nhỏ hơn nhiều so với độ lệch chuẩn ±0,0101 giữa các fold.",
+      rows: [
+        {label:"b. Target encoding", val:0.8603, delta:"+0,0009", kind:"flat"},
+        {label:"Base (gốc)",         val:0.8594, delta:"—",       kind:"base"},
+        {label:"d. Suburb ≥ 10",     val:0.8593, delta:"−0,0001", kind:"flat"}
+      ]
+    }
+  };
+  var MIN = 0.70, MAX = 0.90;
+  function fmt(v){ return v.toFixed(4).replace(".", ","); }
+  function renderCV(key){
+    var data = CV[key];
+    var W = 760, rowH = 44, top = 8, labelW = 168, valW = 118;
+    var plotW = W - labelW - valW;
+    var H = top*2 + data.rows.length*rowH + 26;
+    var x0 = labelW, x1 = labelW + plotW;
+    function X(v){ return x0 + (v-MIN)/(MAX-MIN)*plotW; }
+    var s = '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Biểu đồ cột điểm CV 5-fold trên train">';
+    // gridlines + axis labels
+    [0.70,0.75,0.80,0.85,0.90].forEach(function(g){
+      var gx = X(g);
+      s += '<line x1="'+gx+'" y1="'+top+'" x2="'+gx+'" y2="'+(H-26)+'" stroke="#e3e3dd" stroke-width="1"/>';
+      s += '<text x="'+gx+'" y="'+(H-8)+'" font-size="12" fill="#5c5c5c" text-anchor="middle">'+fmt(g)+'</text>';
+    });
+    // threshold 0.80
+    var tx = X(0.80);
+    s += '<line x1="'+tx+'" y1="'+top+'" x2="'+tx+'" y2="'+(H-26)+'" stroke="#8a3b12" stroke-width="1.5" stroke-dasharray="5 4"/>';
+    data.rows.forEach(function(r,i){
+      var y = top + i*rowH + 8;
+      var w = Math.max(2, X(r.val)-x0);
+      var fill = r.kind==="base" ? "#111111" : (r.kind==="up" ? "#14532d" : "#b9b9b2");
+      s += '<text x="'+(labelW-10)+'" y="'+(y+19)+'" font-size="14" fill="#111" text-anchor="end">'+r.label+'</text>';
+      s += '<rect x="'+x0+'" y="'+y+'" width="'+w+'" height="26" fill="'+fill+'"/>';
+      s += '<text x="'+(x0+w+10)+'" y="'+(y+19)+'" font-size="14" font-weight="700" fill="#111">'+fmt(r.val)+' <tspan font-weight="600" fill="#5c5c5c">('+r.delta+')</tspan></text>';
+    });
+    s += '</svg>';
+    document.getElementById("cv-chart").innerHTML = s;
+    document.getElementById("cv-cap").textContent = data.cap;
+  }
+  var tabBtns = document.querySelectorAll("[data-model]");
+  tabBtns.forEach(function(b){
+    b.addEventListener("click", function(){
+      tabBtns.forEach(function(x){ x.setAttribute("aria-selected","false"); });
+      b.setAttribute("aria-selected","true");
+      renderCV(b.getAttribute("data-model"));
+    });
+  });
+  renderCV("ridge");
+
+  /* ---------- Test bars: toggle scale ---------- */
+  var TEST = {
+    log: {
+      cap: "Thang log giá: Ridge + tương tác đạt 0,8042 - qua mốc 0,80. Random Forest + target encoding đạt 0,8674 - thấp hơn gốc 0,8685.",
+      rows: [
+        {label:"Ridge gốc",            val:0.7936, acc:false},
+        {label:"Ridge + tương tác",    val:0.8042, acc:true},
+        {label:"RF gốc",               val:0.8685, acc:false},
+        {label:"RF + target encoding", val:0.8674, acc:true}
+      ]
+    },
+    raw: {
+      cap: "Thang giá thật (AUD): Ridge + tương tác đạt 0,7797 - cải thiện +0,0214 nhưng chưa qua 0,80. Random Forest + target encoding đạt 0,8213, nhích +0,0038 so với gốc.",
+      rows: [
+        {label:"Ridge gốc",            val:0.7583, acc:false},
+        {label:"Ridge + tương tác",    val:0.7797, acc:true},
+        {label:"RF gốc",               val:0.8175, acc:false},
+        {label:"RF + target encoding", val:0.8213, acc:true}
+      ]
+    }
+  };
+  function renderTest(scale){
+    var data = TEST[scale];
+    var html = "";
+    data.rows.forEach(function(r){
+      var pct = (r.val*100).toFixed(2);
+      html += '<div class="bar-row"><span>'+r.label+'</span><div class="bar-track"><div class="bar-fill'+(r.acc?' acc':'')+'" style="width:'+pct+'%"></div></div><span class="bar-val">'+fmt(r.val)+'</span></div>';
+    });
+    document.getElementById("test-bars").innerHTML = html;
+    document.getElementById("test-cap").textContent = data.cap;
+  }
+  var scaleBtns = document.querySelectorAll("[data-scale]");
+  scaleBtns.forEach(function(b){
+    b.addEventListener("click", function(){
+      scaleBtns.forEach(function(x){ x.setAttribute("aria-selected","false"); });
+      b.setAttribute("aria-selected","true");
+      renderTest(b.getAttribute("data-scale"));
+    });
+  });
+  renderTest("log");
+})();
+</script>
+</body>
+</html>
