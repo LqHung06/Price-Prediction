@@ -1,0 +1,22 @@
+Link GitHub Pages của các báo cáo - Price-Prediction
+Trang chủ: https://lqhung06.github.io/Price-Prediction/
+
+1. Báo cáo giá nhà King County
+   https://lqhung06.github.io/Price-Prediction/reports/bao-cao-gia-nha-king-county.html
+
+2. Báo cáo giá nhà Melbourne
+   https://lqhung06.github.io/Price-Prediction/reports/bao-cao-gia-nha-melbourne.html
+
+3. Báo cáo giá nhà Ấn Độ
+   https://lqhung06.github.io/Price-Prediction/reports/bao-cao-gia-nha-an-do.html
+
+4. Báo cáo giá kim cương
+   https://lqhung06.github.io/Price-Prediction/reports/bao-cao-gia-kim-cuong.html
+
+5. Báo cáo tối ưu tiền xử lý Melbourne
+   https://lqhung06.github.io/Price-Prediction/reports/bao-cao-toi-uu-tien-xu-ly-melbourne.html
+
+6. Báo cáo gộp 3 phương án tiền xử lý Melbourne
+   https://lqhung06.github.io/Price-Prediction/reports/bao-cao-gop-3-phuong-an-melbourne.html
+
+Lưu ý: các link trên chỉ mở được sau khi bật GitHub Pages ở Settings -> Pages -> Deploy from a branch -> Branch main -> Save.

@@ -50,6 +50,7 @@ Price-Prediction/
 ├── data/
 │   └── diamonds.csv            # chưa có notebook riêng, chạy bằng script trong src/
 ├── reports/                    # 6 báo cáo HTML, mở trực tiếp bằng trình duyệt
+│   ├── links.txt               # link GitHub Pages của 6 báo cáo
 │   ├── bao-cao-gia-nha-king-county.html
 │   ├── bao-cao-gia-nha-melbourne.html
 │   ├── bao-cao-gia-nha-an-do.html
