@@ -1,0 +1,86 @@
+{
+  "results": {
+    "n_raw": 53940,
+    "n_bad_xyz0_dropped": 20,
+    "n_used": 53920,
+    "Mean baseline": {
+      "R2_log": -0.0,
+      "R2_raw": -0.1487,
+      "MAE_log": 0.8758,
+      "MAE_raw": 2817.0,
+      "RMSE_raw": 4291.5,
+      "MedAPE_pct": 70.42
+    },
+    "Ridge": {
+      "R2_log": 0.9834,
+      "R2_raw": 0.967,
+      "MAE_log": 0.102,
+      "MAE_raw": 389.7,
+      "RMSE_raw": 727.7,
+      "MedAPE_pct": 8.27,
+      "train_sec": 0.8,
+      "alpha": 1.0,
+      "R2_train_log": 0.9829,
+      "CV_R2_mean": 0.9829,
+      "CV_R2_std": 0.0003,
+      "coefs": {
+        "log_carat": 0.873,
+        "log_volume": 0.227,
+        "depth": 0.004,
+        "table": 0.003,
+        "cut_Fair": -0.093,
+        "cut_Good": -0.022,
+        "cut_Ideal": 0.061,
+        "cut_Premium": 0.039,
+        "cut_Very Good": 0.015,
+        "color_D": 0.206,
+        "color_E": 0.149,
+        "color_F": 0.109,
+        "color_G": 0.043,
+        "color_H": -0.045,
+        "color_I": -0.163,
+        "color_J": -0.3,
+        "clarity_I1": -0.68,
+        "clarity_IF": 0.405,
+        "clarity_SI1": -0.118,
+        "clarity_SI2": -0.281,
+        "clarity_VS1": 0.101,
+        "clarity_VS2": 0.03,
+        "clarity_VVS1": 0.307,
+        "clarity_VVS2": 0.236
+      }
+    },
+    "RandomForest": {
+      "R2_log": 0.9882,
+      "R2_raw": 0.9805,
+      "MAE_log": 0.0802,
+      "MAE_raw": 277.4,
+      "RMSE_raw": 559.3,
+      "MedAPE_pct": 5.78,
+      "train_sec": 44.7,
+      "R2_train_log": 0.9962,
+      "CV_R2_mean": 0.9883,
+      "CV_R2_std": 0.0002,
+      "perm_importance": {
+        "log_carat": 0.0867,
+        "log_volume": 1.6176,
+        "depth": 0.0004,
+        "table": -0.0002,
+        "cut": 0.0022,
+        "color": 0.0368,
+        "clarity": 0.0785
+      }
+    }
+  },
+  "n_train": 43136,
+  "n_test": 10784,
+  "features": [
+    "log_carat",
+    "log_volume",
+    "depth",
+    "table",
+    "cut",
+    "color",
+    "clarity"
+  ]
+}
