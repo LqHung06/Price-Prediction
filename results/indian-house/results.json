@@ -1,0 +1,89 @@
+{
+  "results": {
+    "Mean baseline": {
+      "R2_log": -0.0022,
+      "R2_raw": -0.0258,
+      "MAE_log": 0.187,
+      "MAE_raw": 112495.0,
+      "RMSE_raw": 147233.2,
+      "MedAPE_pct": 15.32
+    },
+    "Ridge": {
+      "R2_log": 0.9427,
+      "R2_raw": 0.9126,
+      "MAE_log": 0.0413,
+      "MAE_raw": 25938.5,
+      "RMSE_raw": 42973.4,
+      "MedAPE_pct": 3.39,
+      "train_sec": 0.1,
+      "alpha": 1.0,
+      "R2_train_log": 0.9148,
+      "CV_R2_mean": 0.9176,
+      "CV_R2_std": 0.0169,
+      "coefs": {
+        "log_Area": 0.157,
+        "Rooms": 0.09,
+        "Age": -0.027,
+        "Area_per_Room": 0.048,
+        "Location_Delhi": 0.085,
+        "Location_Gurugram": 0.063,
+        "Location_Indore": -0.037,
+        "Location_Jaipur": -0.015,
+        "Location_Kanpur": -0.066,
+        "Location_Lucknow": -0.02,
+        "Location_Noida": 0.037,
+        "Location_Prayagraj": -0.048,
+        "Street_Type_Corner Plot": -0.003,
+        "Street_Type_Gated Society": 0.041,
+        "Street_Type_Highway Facing": -0.022,
+        "Street_Type_Main Road": 0.022,
+        "Street_Type_Residential Lane": -0.038,
+        "Furnishing_Furnished": 0.044,
+        "Furnishing_Semi-Furnished": 0.003,
+        "Furnishing_Unfurnished": -0.048,
+        "Property_Type_Apartment": -0.109,
+        "Property_Type_Duplex": 0.015,
+        "Property_Type_Independent House": -0.015,
+        "Property_Type_Villa": 0.109,
+        "Has_Pool_No": -0.03,
+        "Has_Pool_Yes": 0.03
+      }
+    },
+    "RandomForest": {
+      "R2_log": 0.89,
+      "R2_raw": 0.9009,
+      "MAE_log": 0.0612,
+      "MAE_raw": 36072.7,
+      "RMSE_raw": 45759.2,
+      "MedAPE_pct": 5.22,
+      "train_sec": 1.7,
+      "R2_train_log": 0.9615,
+      "CV_R2_mean": 0.8474,
+      "CV_R2_std": 0.0248,
+      "perm_importance": {
+        "log_Area": 1.5141,
+        "Rooms": 0.0115,
+        "Age": 0.0126,
+        "Area_per_Room": 0.0232,
+        "Location": 0.0258,
+        "Street_Type": 0.0048,
+        "Furnishing": 0.0113,
+        "Property_Type": 0.1203,
+        "Has_Pool": 0.0028
+      }
+    }
+  },
+  "n_train": 899,
+  "n_test": 225,
+  "features": [
+    "log_Area",
+    "Rooms",
+    "Age",
+    "Area_per_Room",
+    "Location",
+    "Street_Type",
+    "Furnishing",
+    "Property_Type",
+    "Has_Pool"
+  ]
+}
