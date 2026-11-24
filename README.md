@@ -40,7 +40,6 @@ Chi tiết đầy đủ nằm trong `reports/bao-cao-toi-uu-tien-xu-ly-melbourne
 Price-Prediction/
 ├── README.md
 ├── requirements.txt
-├── LICENSE
 ├── notebooks/                  # 3 notebook đã chạy xong, mở là xem được kết quả
 │   ├── phan-tich-gia-nha-an-do.ipynb
 │   ├── phan-tich-gia-nha-king-county.ipynb
@@ -114,7 +113,3 @@ King County hợp với bài toán kinh tế nhất. Đây là ví dụ rõ củ
 ## Báo cáo
 
 6 báo cáo HTML trong `reports/` viết bằng tiếng Việt, theo cùng một khung: bài toán, thu thập dữ liệu, làm sạch và chuẩn hóa, mô tả dữ liệu, lý thuyết hai mô hình, kết quả, kiểm tra overfitting, kết luận. Mở trực tiếp bằng trình duyệt, không cần server. Bật GitHub Pages cho repo thì xem được báo cáo bằng link thay vì chỉ xem mã nguồn.
-
-## License
-
-MIT, xem file `LICENSE`.
