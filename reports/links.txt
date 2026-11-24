@@ -21,5 +21,3 @@ Trang chủ: https://lqhung06.github.io/Price-Prediction/
 
 7. Báo cáo tối ưu tiền xử lý vòng 2 Melbourne
    https://lqhung06.github.io/Price-Prediction/reports/bao-cao-toi-uu-vong-2-melbourne.html
-
-Lưu ý: các link trên chỉ mở được sau khi bật GitHub Pages ở Settings -> Pages -> Deploy from a branch -> Branch main -> Save.
