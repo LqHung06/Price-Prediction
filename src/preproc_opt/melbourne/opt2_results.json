@@ -1,0 +1,195 @@
+{
+  "reproduction": {
+    "triple_cv_mean": 0.8144,
+    "expected": 0.8144,
+    "within_tol": true
+  },
+  "cv": {
+    "ridge": {
+      "triple": {
+        "mean": 0.8144,
+        "std": 0.0117,
+        "folds": [
+          0.807,
+          0.8128,
+          0.8164,
+          0.8353,
+          0.8008
+        ],
+        "seconds": 26.1
+      },
+      "V1_knn10": {
+        "mean": 0.8151,
+        "std": 0.0118,
+        "folds": [
+          0.8093,
+          0.8138,
+          0.8162,
+          0.8359,
+          0.8
+        ],
+        "seconds": 18.6
+      },
+      "V2_knn15": {
+        "mean": 0.8149,
+        "std": 0.0119,
+        "folds": [
+          0.8084,
+          0.8135,
+          0.8161,
+          0.836,
+          0.8003
+        ],
+        "seconds": 18.3
+      },
+      "V3_iterative": {
+        "mean": 0.8114,
+        "std": 0.0116,
+        "folds": [
+          0.8081,
+          0.8076,
+          0.8124,
+          0.8322,
+          0.7969
+        ],
+        "seconds": 6.5
+      },
+      "V4_suburb20": {
+        "mean": 0.8093,
+        "std": 0.0109,
+        "folds": [
+          0.8031,
+          0.8095,
+          0.8113,
+          0.8279,
+          0.7948
+        ],
+        "seconds": 18.3
+      },
+      "V5_suburb50": {
+        "mean": 0.7959,
+        "std": 0.012,
+        "folds": [
+          0.7898,
+          0.7947,
+          0.7994,
+          0.816,
+          0.7798
+        ],
+        "seconds": 16.8
+      },
+      "V6_extra_inter": {
+        "mean": 0.8204,
+        "std": 0.0118,
+        "folds": [
+          0.8144,
+          0.8155,
+          0.8228,
+          0.8419,
+          0.8073
+        ],
+        "seconds": 18.7
+      },
+      "V7_te_region": {
+        "mean": 0.8131,
+        "std": 0.0112,
+        "folds": [
+          0.8065,
+          0.8113,
+          0.8145,
+          0.8334,
+          0.8
+        ],
+        "seconds": 17.5
+      },
+      "V8_zero_drop": {
+        "mean": 0.8045,
+        "std": 0.0094,
+        "folds": [
+          0.7967,
+          0.8011,
+          0.8063,
+          0.822,
+          0.7966
+        ],
+        "seconds": 12.9
+      },
+      "V9_robust": {
+        "mean": 0.8144,
+        "std": 0.0116,
+        "folds": [
+          0.807,
+          0.8129,
+          0.8164,
+          0.8351,
+          0.8008
+        ],
+        "seconds": 17.3
+      },
+      "V10_poly2": {
+        "mean": 0.8388,
+        "std": 0.0131,
+        "folds": [
+          0.8336,
+          0.8333,
+          0.843,
+          0.8617,
+          0.8226
+        ],
+        "seconds": 31.0
+      }
+    },
+    "rf_150trees": {
+      "V10_poly2": {
+        "mean": 0.8528,
+        "std": 0.0104,
+        "folds": [
+          0.8458,
+          0.8575,
+          0.8608,
+          0.8638,
+          0.836
+        ],
+        "seconds": 633.4
+      }
+    }
+  },
+  "test_winner": {
+    "ridge": {
+      "R2_log": 0.8419,
+      "R2_raw": 0.8175,
+      "MAE_log": 0.1571,
+      "MAE_raw": 171700.2,
+      "RMSE_raw": 269274.7,
+      "MedAPE_pct": 12.47,
+      "variant": "V10_poly2",
+      "alpha": 0.1,
+      "R2_train_log": 0.851,
+      "CV_R2_mean": 0.8388,
+      "CV_R2_std": 0.0131,
+      "train_sec": 16.9
+    },
+    "rf": {
+      "R2_log": 0.8627,
+      "R2_raw": 0.8173,
+      "MAE_log": 0.1433,
+      "MAE_raw": 162540.7,
+      "RMSE_raw": 269397.0,
+      "MedAPE_pct": 11.12,
+      "variant": "V10_poly2",
+      "R2_train_log": 0.9724,
+      "CV_R2_mean": 0.8528,
+      "CV_R2_std": 0.0104,
+      "note": "CV used 150 trees; final test fit uses 300 trees as in original run",
+      "train_sec": 360.5
+    }
+  },
+  "verdict": {
+    "winner": "V10_poly2",
+    "winner_cv": 0.8388,
+    "triple_cv": 0.8144,
+    "gain_over_triple": 0.0244,
+    "tie": false,
+    "tie_margin": 0.005
+  }
+}
