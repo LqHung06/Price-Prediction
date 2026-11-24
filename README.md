@@ -1,4 +1,4 @@
-# price-prediction-ml
+# Price-Prediction
 
 Dự đoán giá nhà và giá kim cương bằng hai mô hình hồi quy, Ridge Regression và Random Forest Regression, trên 4 bộ dữ liệu Kaggle. Mục tiêu từ đầu là R² trên tập test vượt 0,80. Cả 4 bộ chạy cùng một pipeline để so sánh được với nhau: target là log của giá, chia ngẫu nhiên 80/20 với `random_state=42`, impute median/mode chỉ học từ train, winsorise ở 1%/99%.
 
@@ -37,7 +37,7 @@ Chi tiết đầy đủ nằm trong `reports/bao-cao-toi-uu-tien-xu-ly-melbourne
 ## Cấu trúc repo
 
 ```
-price-prediction-ml/
+Price-Prediction/
 ├── README.md
 ├── requirements.txt
 ├── LICENSE
