@@ -19,11 +19,11 @@ Bảng dưới báo R² trên cả hai thang. Thang log là thang mô hình họ
 
 Sau vòng chạy chuẩn, Melbourne là bộ duy nhất còn dư địa cải thiện. Bộ này thiếu nặng nhất, 47,5% diện tích nhà trống và 314 vùng ngoại ô, và Ridge trượt mốc 0,80. Mỗi phương án được thử riêng, so sánh chỉ bằng 5-fold CV trên train, rồi phương án thắng mới chạm test một lần.
 
-Thêm tương tác (lat×long, Distance×Type, log_Landsize×Rooms) đưa Ridge lên R² log 0,8042 trên test. Gộp 3 phương án, tương tác cộng KNN impute cộng gộp vùng ngoại ô thưa, là tốt nhất: CV 0,8144, test R² log 0,8183 và R² thô 0,7902, MAE 184.621 AUD. Thang thô vẫn thiếu mốc 0,80 một chút. Vượt mốc đó cần thêm thứ khác ngoài tiền xử lý, ví dụ một họ mô hình khác hoặc biến mới.
+Thêm tương tác (lat×long, Distance×Type, log_Landsize×Rooms) đưa Ridge lên R² log 0,8042 trên test. Gộp 3 phương án, tương tác cộng KNN impute cộng gộp vùng ngoại ô thưa, lên test R² log 0,8183 và R² thô 0,7902, MAE 184.621 AUD. Vòng 2 thêm khai triển đa thức bậc 2 lên trên gộp 3 thì Ridge qua mốc 0,80 cả hai thang: test R² log 0,8419 và R² thô 0,8175, MAE 171.700 AUD. Tiền xử lý cho Melbourne tới đây là xong, sai số còn lại là giới hạn của chính bộ dữ liệu.
 
 Gộp 3 không phải lúc nào cũng thắng. Ở Nhà Ấn Độ, phương án thắng là pair2, tương tác cộng log_Area², với R² log 0,9444 trên test, còn gộp 3 chỉ đạt CV 0,9015, thua cả baseline. KNN impute làm hại ở đây vì chỉ 8,6% dòng thiếu và Area gần như không tương quan với Rooms. Ở King County, tương tác đơn thắng với R² log 0,8801 trên test, còn gộp 3 tệ nhất cho Ridge vì gộp zipcode thưa xóa đúng tín hiệu vị trí mà Ridge dựa vào.
 
-Chi tiết đầy đủ nằm trong `reports/bao-cao-toi-uu-tien-xu-ly-melbourne.html` và `reports/bao-cao-gop-3-phuong-an-melbourne.html`.
+Chi tiết đầy đủ nằm trong `reports/bao-cao-toi-uu-tien-xu-ly-melbourne.html`, `reports/bao-cao-gop-3-phuong-an-melbourne.html` và `reports/bao-cao-toi-uu-vong-2-melbourne.html`.
 
 ## Các bộ dữ liệu
 
@@ -49,14 +49,15 @@ Price-Prediction/
 │   └── melb_data.csv
 ├── data/
 │   └── diamonds.csv            # chưa có notebook riêng, chạy bằng script trong src/
-├── reports/                    # 6 báo cáo HTML, mở trực tiếp bằng trình duyệt
-│   ├── links.txt               # link GitHub Pages của 6 báo cáo
+├── reports/                    # 7 báo cáo HTML, mở trực tiếp bằng trình duyệt
+│   ├── links.txt               # link GitHub Pages của 7 báo cáo
 │   ├── bao-cao-gia-nha-king-county.html
 │   ├── bao-cao-gia-nha-melbourne.html
 │   ├── bao-cao-gia-nha-an-do.html
 │   ├── bao-cao-gia-kim-cuong.html
 │   ├── bao-cao-toi-uu-tien-xu-ly-melbourne.html
-│   └── bao-cao-gop-3-phuong-an-melbourne.html
+│   ├── bao-cao-gop-3-phuong-an-melbourne.html
+│   └── bao-cao-toi-uu-vong-2-melbourne.html
 ├── src/                        # script chạy lại toàn bộ pipeline, đường dẫn tương đối
 │   ├── eda_*.py                # phân tích khám phá
 │   ├── model_*.py              # chạy Ridge + RF, ghi results.json + biểu đồ
@@ -113,4 +114,4 @@ King County hợp với bài toán kinh tế nhất. Đây là ví dụ rõ củ
 
 ## Báo cáo
 
-6 báo cáo HTML trong `reports/` viết bằng tiếng Việt, theo cùng một khung: bài toán, thu thập dữ liệu, làm sạch và chuẩn hóa, mô tả dữ liệu, lý thuyết hai mô hình, kết quả, kiểm tra overfitting, kết luận. Mở trực tiếp bằng trình duyệt, không cần server. Bật GitHub Pages cho repo thì xem được báo cáo bằng link thay vì chỉ xem mã nguồn.
+7 báo cáo HTML trong `reports/` viết bằng tiếng Việt, theo cùng một khung: bài toán, thu thập dữ liệu, làm sạch và chuẩn hóa, mô tả dữ liệu, lý thuyết hai mô hình, kết quả, kiểm tra overfitting, kết luận. Mở trực tiếp bằng trình duyệt, không cần server. Bật GitHub Pages cho repo thì xem được báo cáo bằng link thay vì chỉ xem mã nguồn.
